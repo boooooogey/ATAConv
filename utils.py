@@ -1,7 +1,9 @@
 import torch
 import pandas as pd
 import numpy as np
-from pysam import FastaFile
+#from pysam import FastaFile
+#from Bio import SeqIO
+from pyfaidx import Fasta
 
 def readbed(filename):
     data = pd.read_csv(filename, sep = "\t", header = None)
@@ -18,7 +20,7 @@ def returnonehot(string):
     if len(icol)>0:
         out[irow,icol] = 1
 
-    return np.asarray(out)
+    return out
 
 class MEME():
     def __init__(self):
@@ -70,20 +72,25 @@ class MEME():
 
 class SeqDataset(torch.utils.data.Dataset):
 
-  def __init__(self, bed, genome, window_size):
-    self.chrom_list, self.midpoint_list = readbed(bed)
-    self.window_offset = int(window_size/2)
-    self.window_size = 2*self.window_offset
-    self.genome = FastaFile(genome)
+  def __init__(self, bedGraph_path, sequence_path, celltype):
+    self.sequences = pd.read_csv(sequence_path, header = None, sep = "\t", index_col = 0)
+    #self.onehottransform = OneHotEncoder(sparse=False).fit(np.array(list("ACGT")).reshape(-1,1))
+    #self.sequences = SeqIO.index(sequence_path, "fasta")
+    #self.sequence_path = sequence_path
+    #self.sequences = Fasta(self.sequence_path)
 
-    chrom_references = self.genome.references
-    chrom_sizes = self.genome.lengths
-
-    self.limits = {chrom_references[i]: chrom_sizes[i] for i in range(len(chrom_references))}
+    self.atacsignal = pd.read_csv(bedGraph_path, header = 0, sep = "\t")
+    self.celltype = celltype
+    self.signal = self.atacsignal[self.celltype].to_numpy(dtype = np.float32)
 
   def __len__(self):
-    return len(self.midpoint_list)
+    return self.atacsignal.shape[0]
 
   def __getitem__(self, index):
-    sequence = self.genome.fetch(self.chrom_list[index], self.midpoint_list[index] - self.window_offset, self.midpoint_list[index] + self.window_offset)
-    return returnonehot(sequence)
+    #assert self.atacsignal.iloc[index, 0] == self.sequences.iloc[index, 0]
+    seq_name = self.atacsignal.iloc[index, 0]
+    sequence = self.sequences.loc[seq_name, 1]
+    #uid = torch.utils.data.get_worker_info().id
+    #sequence = self.sequences[self.atacsignal.iloc[index, 0]][:].seq
+    #print(f"{uid}: >{self.atacsignal.iloc[index, 0]}\n{sequence}")
+    return returnonehot(sequence), self.signal[index]
