@@ -2,6 +2,7 @@ from model import MaskNet
 from utils import SeqDataset
 import torch
 from torch.optim import Adam
+from adam import AdamL1
 import os
 from IPython import embed
 import pickle
@@ -47,13 +48,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = MaskNet(meme_file, window_size, num_heads).to(device)
 
+l1_param = [0 for i in model.parameters()]
+l1_param[len(l1_param)-2] = 1000
+
 #mem_params = sum([param.nelement()*param.element_size() for param in model.parameters()])
 #mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
 #mem = mem_params + mem_bufs # in bytes
 
 model.init_weights()
 
-optimizer = Adam(model.parameters())
+#optimizer_seq = Adam([x[1] for x in model.named_parameters() if x[0] not in ["linreg.weight", "linreg.bias"]])
+optimizer = AdamL1(model.parameters(), l1_param)
+#optimizer_linreg = ProxSGD([model.linreg.weight, model.linreg.bias], mu = 100000000)
+#optimizer_linreg = ProxSGD(model.parameters(), mu = 0.0001)
 
 dataset = SeqDataset(signal_file, sequence_file, cell_type)
 num_points = len(dataset)
@@ -75,6 +82,7 @@ test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_s
 validation_dataloader = torch.utils.data.DataLoader(validation_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
 
 loss = torch.nn.MSELoss()
+#embed()
 
 stats = {
     'train_average_loss' : [],
@@ -91,13 +99,20 @@ for e in range(number_of_epochs):
     x, y = x.to(device), y.to(device)
 
     pred = model(x)
-    currloss = loss(pred, y)
+    currloss = loss(pred, y)# + l1_param * model.linreg.weight.abs().sum()
     #print(currloss)
     trainingloss += currloss
 
     optimizer.zero_grad()
+    #optimizer_seq.zero_grad()
+    #optimizer_linreg.zero_grad()
+
     currloss.backward()
+
     optimizer.step()
+    #optimizer_linreg.step()
+    #optimizer_seq.step()
+
   with torch.no_grad():
     model.eval()
     for x, y in validation_dataloader:
@@ -125,3 +140,5 @@ with torch.no_grad():
 stats['completed'] = True
 
 save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
+
+print(model.linreg.weight)

@@ -71,18 +71,37 @@ class TransformerBlock(nn.Module):
     self.norm1 = nn.LayerNorm(k)
     self.norm2 = nn.LayerNorm(k)
 
-    self.ff = nn.Sequential(
-      nn.Linear(k, 4 * k),
-      nn.ReLU(),
-      nn.Linear(4 * k, k))
+    self.linear1 = nn.Linear(k, 4 * k)
+    self.relu1   = nn.ReLU()
+    self.linear2 = nn.Linear(4 * k, k)
 
   def forward(self, x):
     attended = self.attention(x)
-    attended = attended.transpose(1,2)
-    x = self.norm1(attended + x.transpose(1,2))
 
-    fedforward = self.ff(x)
-    return self.norm2(fedforward + x).transpose(1,2)
+    x = x + attended
+    
+    x = (x - x.mean(axis=1, keepdim=True))/torch.sqrt(x.var(axis=1, keepdim=True, unbiased=False) + self.norm1.eps) * self.norm1.weight.view(1,-1,1) + self.norm1.bias.view(1,-1,1)
+
+    fedforward = torch.einsum("bki, jk -> bji", x, self.linear1.weight) + self.linear1.bias.view(1,-1,1)
+    fedforward = self.relu1(fedforward)
+    fedforward = torch.einsum("bki, jk -> bji", fedforward, self.linear2.weight) + self.linear2.bias.view(1,-1,1)
+
+    x = fedforward + x
+
+    x = (x - x.mean(axis=1, keepdim=True))/torch.sqrt(x.var(axis=1, keepdim=True, unbiased=False) + self.norm2.eps) * self.norm2.weight.view(1,-1,1) + self.norm2.bias.view(1,-1,1)
+
+    return x
+
+#  def forward(self, x):
+#    attended = self.attention(x)
+#    attended = attended.transpose(1,2)
+#    x = self.norm1(attended + x.transpose(1,2))
+#    #fedforward = self.ff(x)
+#    fedforward = self.linear1(x)
+#    fedforward = self.relu1(fedforward)
+#    fedforward = self.linear2(fedforward)
+#
+#    return self.norm2(fedforward + x).transpose(1,2)
 
 if __name__ == "__main__":
   x = torch.rand(64, 3, 100)
