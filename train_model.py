@@ -17,7 +17,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--meme_file", required=True, help="Path to the meme file that stores PWMs")
 parser.add_argument("--atac_file", required=True, help="Path to the file that stores ATAC signal")
 parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
-parser.add_argument("--cell_type", required=True, help="Model is trained to predict the specific cell type's ATAC signal.")
 parser.add_argument("--model_output", required=True, help="Directory to store model parameters")
 parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--number_of_epochs", default=10, type=int, help="Number of epochs for training")
@@ -34,7 +33,6 @@ number_of_epochs = args.number_of_epochs # 2
 meme_file = args.meme_file # "../motif-Convo-orion/local/Test.meme"
 signal_file = args.atac_file # "local/ATACseqSignal.first10k.txt"
 sequence_file = args.sequences # "local/sequences.list"
-cell_type = args.cell_type # "B"
 batch_size = args.batch_size # 254
 model_output = args.model_output # "local/test/"
 train_ratio = args.train_ratio # 0.8
@@ -46,7 +44,7 @@ os.path.exists(model_output) or os.makedirs(model_output)
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = MaskNet(meme_file, window_size, num_heads).to(device)
+model = MaskNet(8, meme_file, window_size, num_heads).to(device)
 
 l1_param = [0 for i in model.parameters()]
 l1_param[len(l1_param)-2] = 1000
@@ -58,11 +56,12 @@ l1_param[len(l1_param)-2] = 1000
 model.init_weights()
 
 #optimizer_seq = Adam([x[1] for x in model.named_parameters() if x[0] not in ["linreg.weight", "linreg.bias"]])
-optimizer = AdamL1(model.parameters(), l1_param)
+#optimizer = AdamL1(model.parameters(), l1_param)
+optimizer = Adam(model.parameters())
 #optimizer_linreg = ProxSGD([model.linreg.weight, model.linreg.bias], mu = 100000000)
 #optimizer_linreg = ProxSGD(model.parameters(), mu = 0.0001)
 
-dataset = SeqDataset(signal_file, sequence_file, cell_type)
+dataset = SeqDataset(signal_file, sequence_file)
 num_points = len(dataset)
 train_size = int(train_ratio * num_points)
 validation_size = int(validation_ratio * num_points)
@@ -81,7 +80,7 @@ test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_s
 
 validation_dataloader = torch.utils.data.DataLoader(validation_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
 
-loss = torch.nn.MSELoss()
+loss = torch.nn.MSELoss(reduction="mean")
 #embed()
 
 stats = {
@@ -140,5 +139,3 @@ with torch.no_grad():
 stats['completed'] = True
 
 save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
-
-print(model.linreg.weight)

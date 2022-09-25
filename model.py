@@ -5,15 +5,19 @@ from torch.nn import Conv1d
 from torch.nn import Linear
 from torch.nn import MaxPool1d
 from torch.nn import ReLU
+from torch.nn import ParameterList
 from torch import flatten
 from transformer import TransformerBlock
 
 from utils import MEME
 
 class MaskNet(Module):
-  def __init__(self, motif_path, window_size, num_heads, stride = 1):
+  def __init__(self, num_of_response, motif_path, window_size, num_heads, stride = 1):
 
     super(MaskNet, self).__init__()
+
+    #keep y dimension
+    self.num_of_response = num_of_response
 
     #Attention heads
     self.num_heads = num_heads
@@ -56,8 +60,8 @@ class MaskNet(Module):
 
     self.maxpoolmask = MaxPool1d(kernel_size=self.out1_length, stride=1)
 
-    #Final regression layer
-    self.linreg = Linear(in_features=out_channels, out_features=1)
+    #Final regression layer. Only layer that does not share weights
+    self.linreg = ParameterList([Linear(in_features=out_channels, out_features=1) for i in range(num_of_response)])
 
   def init_weights(self):
     for name, layer in self.named_children():
@@ -68,6 +72,9 @@ class MaskNet(Module):
           torch.nn.init.kaiming_uniform_(layer.weight, nonlinearity = "relu")
         elif isinstance(layer, Conv1d):
           torch.nn.init.kaiming_normal_(layer.weight, nonlinearity = "relu")
+        elif isinstance(layer, ParameterList):
+          for li in layer:
+            torch.nn.init.kaiming_uniform_(li.weight, nonlinearity = "linear")
         else:
           pass
 
@@ -111,7 +118,7 @@ class MaskNet(Module):
     y = y.reshape(y.shape[0], y.shape[1])
     
     #regression
-    y = self.linreg(y)
+    y = torch.hstack([l(y).view(-1,1) for l in self.linreg])
 
-    return y.reshape(-1)
+    return y
     

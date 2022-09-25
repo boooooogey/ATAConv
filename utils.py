@@ -72,7 +72,7 @@ class MEME():
 
 class SeqDataset(torch.utils.data.Dataset):
 
-  def __init__(self, bedGraph_path, sequence_path, celltype):
+  def __init__(self, bedGraph_path, sequence_path):
     self.sequences = pd.read_csv(sequence_path, header = None, sep = "\t", index_col = 0)
     #self.onehottransform = OneHotEncoder(sparse=False).fit(np.array(list("ACGT")).reshape(-1,1))
     #self.sequences = SeqIO.index(sequence_path, "fasta")
@@ -80,8 +80,6 @@ class SeqDataset(torch.utils.data.Dataset):
     #self.sequences = Fasta(self.sequence_path)
 
     self.atacsignal = pd.read_csv(bedGraph_path, header = 0, sep = "\t")
-    self.celltype = celltype
-    self.signal = self.atacsignal[self.celltype].to_numpy(dtype = np.float32)
 
   def __len__(self):
     return self.atacsignal.shape[0]
@@ -93,4 +91,4 @@ class SeqDataset(torch.utils.data.Dataset):
     #uid = torch.utils.data.get_worker_info().id
     #sequence = self.sequences[self.atacsignal.iloc[index, 0]][:].seq
     #print(f"{uid}: >{self.atacsignal.iloc[index, 0]}\n{sequence}")
-    return returnonehot(sequence), self.signal[index]
+    return returnonehot(sequence), self.atacsignal.iloc[index, 1:].to_numpy(dtype=np.float32)
