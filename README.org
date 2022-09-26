@@ -1,0 +1,13 @@
+#+TITLE: README
+
+* Description
+The code contained herewithin provides a procedure to use ATAC-seq data to describe regulatory landscapes in an interpretable way; this is mainly written in python, and currently a public repository. If you want to clone this repository...
+* Using this code
+** Clone this repo
+#+begin_src bash
+git clone https://github.com/boooooogey/ATAConv.git
+#+end_src
+** Run the code
+#+begin_src bash
+python train_model.py --meme_file "Test.meme" --atac_file "ATACseqSignal.txt" --sequences "sequences.list" --cell_type "B" --model_output "test"
+#+end_src
