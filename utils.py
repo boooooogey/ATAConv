@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 #from pysam import FastaFile
 #from Bio import SeqIO
-from pyfaidx import Fasta
+#from pyfaidx import Fasta
 
 def readbed(filename):
     data = pd.read_csv(filename, sep = "\t", header = None)
