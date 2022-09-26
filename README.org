@@ -1,7 +1,7 @@
 #+TITLE: README
 
 * Description
-The code contained herewithin provides a procedure to us ATAC-seq data to describe regulatory landscapes in an interpretable way; this is mainly written in pythonm and currently a public repository. If you want to clone this repository...
+The code contained herewithin provides a procedure to use ATAC-seq data to describe regulatory landscapes in an interpretable way; this is mainly written in pythonm and currently a public repository. If you want to clone this repository...
 * Using this code
 ** Clone this repo
 #+begin_src bash
