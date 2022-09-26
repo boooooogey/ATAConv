@@ -25,6 +25,7 @@ parser.add_argument("--train_ratio", default=0.8, type=float, help="Train split 
 parser.add_argument("--validation_ratio", default=0.1, type=float, help="Validation split ratio")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
 parser.add_argument("--num_of_heads", default = 8, type=int, help="Number of heads for attention layer")
+parser.add_argument("--l1_param", default = 0.1, type=float, help="Hyperparameter for the l1 regularization of the final layer")
 
 args = parser.parse_args()
 
@@ -39,6 +40,7 @@ train_ratio = args.train_ratio # 0.8
 validation_ratio = args.validation_ratio # 0.1
 num_of_workers = args.num_of_workers # 8
 num_heads = args.num_of_heads # 8
+l1_param = args.l1_param
 
 os.path.exists(model_output) or os.makedirs(model_output)
 
@@ -46,8 +48,6 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 model = MaskNet(8, meme_file, window_size, num_heads).to(device)
 
-l1_param = [0 for i in model.parameters()]
-l1_param[len(l1_param)-2] = 1000
 
 #mem_params = sum([param.nelement()*param.element_size() for param in model.parameters()])
 #mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
@@ -56,8 +56,12 @@ l1_param[len(l1_param)-2] = 1000
 model.init_weights()
 
 #optimizer_seq = Adam([x[1] for x in model.named_parameters() if x[0] not in ["linreg.weight", "linreg.bias"]])
-#optimizer = AdamL1(model.parameters(), l1_param)
-optimizer = Adam(model.parameters())
+optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
+                     'l1_hyper_param': 0},
+                    {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
+                     'l1_hyper_param': l1_param}])
+
+#optimizer = Adam(model.parameters())
 #optimizer_linreg = ProxSGD([model.linreg.weight, model.linreg.bias], mu = 100000000)
 #optimizer_linreg = ProxSGD(model.parameters(), mu = 0.0001)
 
@@ -91,50 +95,49 @@ stats = {
     }
 
 for e in range(number_of_epochs):
-  trainingloss = 0
-  validationloss = 0
+  trainingloss = [] 
+  validationloss = []
   model.train()
   for x, y in train_dataloader:
     x, y = x.to(device), y.to(device)
 
     pred = model(x)
     currloss = loss(pred, y)# + l1_param * model.linreg.weight.abs().sum()
-    #print(currloss)
-    trainingloss += currloss
 
     optimizer.zero_grad()
-    #optimizer_seq.zero_grad()
-    #optimizer_linreg.zero_grad()
 
     currloss.backward()
 
     optimizer.step()
-    #optimizer_linreg.step()
-    #optimizer_seq.step()
+
+    trainingloss.append(currloss.cpu().detach().numpy())
 
   with torch.no_grad():
     model.eval()
     for x, y in validation_dataloader:
       x, y = x.to(device), y.to(device)
       pred = model(x)
-      validationloss += loss(pred, y)
-    print(f"Epoch {e+1}: Average loss (training) = {trainingloss/number_of_step}")
-    print(f"Epoch {e+1}: Average loss (validation) = {validationloss/number_of_step}")
+      validationloss.append(loss(pred, y).cpu().detach().numpy())
+
+    num_zero = [torch.sum(l.weight == 0).cpu() for l in model.linreg]
+    stats['train_average_loss'].append(np.mean(trainingloss))
+    stats['validation_average_loss'].append(np.mean(validationloss))
+    print(f"Epoch {e+1}: Average loss (training) = {stats['train_average_loss'][-1]}")
+    print(f"Epoch {e+1}: Average loss (validation) = {stats['validation_average_loss'][-1]}")
+    print(f"Epoch {e+1}: Min. number of zero = {np.min(num_zero)}, Max. number of zero = {np.max(num_zero)}")
     model.save_model(os.path.join(model_output, f"model.{e}"))
 
-    stats['train_average_loss'].append(trainingloss.cpu().detach().numpy()/len(train_dataset))
-    stats['validation_average_loss'].append(validationloss.cpu().detach().numpy()/len(validation_dataset))
     save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
 
-testloss = 0
+testloss = []
 with torch.no_grad():
   model.eval()
   for x, y in test_dataloader:
     x, y = x.to(device), y.to(device)
     pred = model(x)
-    testloss += loss(pred, y)
-  print(f"Average loss (test) = {testloss/number_of_step}")
-  stats['test_average_loss'] = testloss.cpu().detach().numpy()/len(test_dataset)
+    testloss.append(loss(pred, y).cpu().detach().numpy())
+  stats['test_average_loss'] = np.mean(testloss)
+  print(f"Average loss (test) = {stats['test_average_loss']}")
 
 stats['completed'] = True
 

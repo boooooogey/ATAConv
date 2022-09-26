@@ -37,7 +37,7 @@ class AdamL1(Optimizer):
         https://openreview.net/forum?id=ryQu7f-RZ
     """
 
-    def __init__(self, params, l1_hyper_param, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
+    def __init__(self, params, l1_hyper_param=0, lr=1e-3, betas=(0.9, 0.999), eps=1e-8,
                  weight_decay=0, amsgrad=False, *, 
                  foreach: Optional[bool] = None,
                  maximize: bool = False, capturable: bool = False):
@@ -53,7 +53,7 @@ class AdamL1(Optimizer):
             raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
         defaults = dict(lr=lr, betas=betas, eps=eps,
                         weight_decay=weight_decay, amsgrad=amsgrad,
-                        maximize=maximize, foreach=foreach, capturable=capturable, l1=l1_hyper_param)
+                        maximize=maximize, foreach=foreach, capturable=capturable, l1_hyper_param=l1_hyper_param)
         super(AdamL1, self).__init__(params, defaults)
 
     def __setstate__(self, state):
@@ -92,11 +92,13 @@ class AdamL1(Optimizer):
             max_exp_avg_sqs = []
             state_steps = []
             beta1, beta2 = group['betas']
-            l1_lambda_list = []
+            l1 = group["l1_hyper_param"]
+            #l1_lambda_list = []
 
-            for p, l1_lambda in zip(group['params'], group["l1"]):
+            #for p, l1_lambda in zip(group['params'], group["l1"]):
+            for p in group['params']:
                 if p.grad is not None:
-                    l1_lambda_list.append(l1_lambda)
+                    #l1_lambda_list.append(l1_lambda)
                     params_with_grad.append(p)
                     if p.grad.is_sparse:
                         raise RuntimeError('Adam does not support sparse gradients, please consider SparseAdam instead')
@@ -129,7 +131,7 @@ class AdamL1(Optimizer):
                  exp_avg_sqs,
                  max_exp_avg_sqs,
                  state_steps,
-                 l1_lambda_list,
+                 l1,
                  amsgrad=group['amsgrad'],
                  beta1=beta1,
                  beta2=beta2,
@@ -149,7 +151,8 @@ def adam(params: List[Tensor],
          exp_avg_sqs: List[Tensor],
          max_exp_avg_sqs: List[Tensor],
          state_steps: List[Tensor],
-         l1_lambda_list: List[float],
+         l1_lambda: float,
+         #l1_lambda_list: List[float],
          # kwonly args with defaults are not supported by functions compiled with torchscript issue #70627
          # setting this as kwarg for now as functional API is compiled by torch/distributed/optim
          foreach: bool = None,
@@ -187,7 +190,8 @@ def adam(params: List[Tensor],
          exp_avg_sqs,
          max_exp_avg_sqs,
          state_steps,
-         l1_lambda_list,
+         #l1_lambda_list,
+         l1_lambda,
          amsgrad=amsgrad,
          beta1=beta1,
          beta2=beta2,
@@ -204,7 +208,7 @@ def _single_tensor_adam(params: List[Tensor],
                         exp_avg_sqs: List[Tensor],
                         max_exp_avg_sqs: List[Tensor],
                         state_steps: List[Tensor],
-                        l1_lambda_list: List[float],
+                        l1_lambda: float,
                         *,
                         amsgrad: bool,
                         beta1: float,
@@ -215,7 +219,8 @@ def _single_tensor_adam(params: List[Tensor],
                         maximize: bool,
                         capturable: bool):
 
-    for i, (param, l1_hyper_param) in enumerate(zip(params, l1_lambda_list)):
+    #for i, (param, l1_hyper_param) in enumerate(zip(params, l1_lambda_list)):
+    for i, param in enumerate(params):
 
         grad = grads[i] if not maximize else -grads[i]
         exp_avg = exp_avgs[i]
@@ -279,6 +284,7 @@ def _single_tensor_adam(params: List[Tensor],
 
             param.addcdiv_(exp_avg, denom, value=-step_size)
             ### insert L1 sign(param)(abs(param) - step_size  * l1_lambda / denom)
-            signs = torch.sign(param)
-            param.abs_().add_(denom.reciprocal_(), alpha=-step_size * l1_hyper_param).clamp_(min=0).mul_(signs)
+            if l1_lambda > 0:
+              signs = torch.sign(param)
+              param.abs_().add_(denom.reciprocal_(), alpha=-step_size * l1_lambda).clamp_(min=0).mul_(signs)
 

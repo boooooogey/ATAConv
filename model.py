@@ -12,8 +12,11 @@ from transformer import TransformerBlock
 from utils import MEME
 
 class MaskNet(Module):
-  def __init__(self, num_of_response, motif_path, window_size, num_heads, stride = 1):
-
+  def __init__(self, num_of_response, motif_path, window_size, num_heads, stride = 1,
+               conv_num_channels = 256, # For the convolutional layers except for the first one
+               conv_kernel_size = 16, # For the convolutional layers except for the first one
+               pool_kernel_size = 2,
+               pool_stride = 2):
     super(MaskNet, self).__init__()
 
     #keep y dimension
@@ -42,26 +45,40 @@ class MaskNet(Module):
 
     #Rest of the model
     self.relu1 = ReLU()
-    self.maxpool1 = MaxPool1d(kernel_size=2, stride=2)
-    self.out2_length = int((self.out1_length - 2)/2) + 1
+    self.maxpool1 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    self.out2_length = int((self.out1_length - pool_kernel_size)/pool_stride) + 1
 
     #Second convolutional layer
-    self.conv2 = Conv1d(in_channels=out_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride)
+    self.conv2 = Conv1d(in_channels=out_channels, 
+                        out_channels=conv_num_channels, 
+                        kernel_size=conv_kernel_size, stride=stride)
 
-    self.out3_length = int((self.out2_length - kernel_size) / stride) + 1
+    self.out3_length = int((self.out2_length - conv_kernel_size) / stride) + 1
 
     self.relu2 = ReLU()
-    self.maxpool2 = MaxPool1d(kernel_size=2, stride=2)
-    self.out4_length = int((self.out3_length - 2)/2) + 1
+    self.maxpool2 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    self.out4_length = int((self.out3_length - pool_kernel_size)/pool_stride) + 1
+
+    #Third convolutional layer
+    self.conv3 = Conv1d(in_channels=conv_num_channels, 
+                        out_channels=conv_num_channels, 
+                        kernel_size=conv_kernel_size, stride=stride)
+
+    self.out5_length = int((self.out4_length - conv_kernel_size) / stride) + 1
+
+    self.relu3 = ReLU()
+    self.maxpool3 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    self.out6_length = int((self.out5_length - pool_kernel_size)/pool_stride) + 1
 
     #Linear Layer
-    self.lin1 = Linear(in_features=self.out4_length * out_channels, out_features=self.out1_length)
-    self.relu3 = ReLU()
+    self.lin1 = Linear(in_features=self.out6_length * conv_num_channels, out_features=self.out1_length)
+    self.relu4 = ReLU()
 
-    self.maxpoolmask = MaxPool1d(kernel_size=self.out1_length, stride=1)
+    # self.out1_length * 2 to max pool for both direction ( motif reverse and forward )
+    self.maxpoolmask = MaxPool1d(kernel_size=self.out1_length * 2, stride=1)
 
     #Final regression layer. Only layer that does not share weights
-    self.linreg = ParameterList([Linear(in_features=out_channels, out_features=1) for i in range(num_of_response)])
+    self.linreg = ParameterList([Linear(in_features=int(out_channels/2), out_features=1) for i in range(num_of_response)])
 
   def init_weights(self):
     for name, layer in self.named_children():
@@ -85,6 +102,9 @@ class MaskNet(Module):
       else:
         if isinstance(layer, Linear) or isinstance(layer, Conv1d):
           layer.reset_parameters()
+        elif isinstance(layer, ParameterList):
+          for li in layer:
+            li.reset_parameters()
 
   def save_model(self, path):
     torch.save(self.state_dict(), path)
@@ -106,15 +126,21 @@ class MaskNet(Module):
     mask = self.relu2(mask)
     mask = self.maxpool2(mask)
 
+    mask = self.conv3(mask)
+    mask = self.relu3(mask)
+    mask = self.maxpool3(mask)
+
     mask = flatten(mask, 1)
     mask = self.lin1(mask)
-    mask = self.relu3(mask)
+    mask = self.relu4(mask)
 
     #Applying mask on the result of the first convolution
     dim1, _, dim2 = x.shape
     mask = mask.reshape(dim1, 1, dim2)
     y = mask * x
-    y = self.maxpoolmask(y)
+
+    #maxpooling is run over 2 consecutive channels, 5' and 3' directions.
+    y = self.maxpoolmask(y.view(y.shape[0], int(y.shape[1]/2), int(y.shape[2]*2)))
     y = y.reshape(y.shape[0], y.shape[1])
     
     #regression
