@@ -2,7 +2,7 @@ from model import MaskNet
 from utils import SeqDataset
 import torch
 from torch.optim import Adam
-from adam import AdamL1
+from adam import AdamL1, AdamMCP
 import os
 from IPython import embed
 import pickle
@@ -18,6 +18,7 @@ parser.add_argument("--meme_file", required=True, help="Path to the meme file th
 parser.add_argument("--atac_file", required=True, help="Path to the file that stores ATAC signal")
 parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
 parser.add_argument("--model_output", required=True, help="Directory to store model parameters")
+parser.add_argument("--split_folder", required=True, help="Folder that stores train/val/test splits.")
 parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--number_of_epochs", default=10, type=int, help="Number of epochs for training")
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
@@ -25,7 +26,9 @@ parser.add_argument("--train_ratio", default=0.8, type=float, help="Train split 
 parser.add_argument("--validation_ratio", default=0.1, type=float, help="Validation split ratio")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
 parser.add_argument("--num_of_heads", default = 8, type=int, help="Number of heads for attention layer")
-parser.add_argument("--l1_param", default = 0.1, type=float, help="Hyperparameter for the l1 regularization of the final layer")
+parser.add_argument("--penalty_param", default = 0.1, type=float, help="Hyperparameter for the regularization of the final layer")
+parser.add_argument("--mcp_param", default = 3, type=float, help="Second hyperparameter for the mcp regularization of the final layer (first is --penalty_param)")
+parser.add_argument("--penalty_type", default="l1", help="l1/mcp regularization")
 
 args = parser.parse_args()
 
@@ -40,7 +43,10 @@ train_ratio = args.train_ratio # 0.8
 validation_ratio = args.validation_ratio # 0.1
 num_of_workers = args.num_of_workers # 8
 num_heads = args.num_of_heads # 8
-l1_param = args.l1_param
+penalty_param = args.penalty_param
+penalty_type = args.penalty_type
+mcp_beta = args.mcp_param
+split_folder = args.split_folder
 
 os.path.exists(model_output) or os.makedirs(model_output)
 
@@ -56,26 +62,41 @@ model = MaskNet(8, meme_file, window_size, num_heads).to(device)
 model.init_weights()
 
 #optimizer_seq = Adam([x[1] for x in model.named_parameters() if x[0] not in ["linreg.weight", "linreg.bias"]])
-optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
-                     'l1_hyper_param': 0},
-                    {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
-                     'l1_hyper_param': l1_param}])
+if penalty_type == "l1":
+  optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
+                       'penalty_hyper_param': 0},
+                      {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
+                       'penalty_hyper_param': penalty_param}])
+elif penalty_type == "mcp":
+  optimizer = AdamMCP([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
+                        'penalty_hyper_param': 0},
+                       {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
+                        'penalty_hyper_param': penalty_param,
+                        'b': 3}])
+else:
+  raise ValueError(f"Invalid penalty type{penalty_type}.")
 
 #optimizer = Adam(model.parameters())
 #optimizer_linreg = ProxSGD([model.linreg.weight, model.linreg.bias], mu = 100000000)
 #optimizer_linreg = ProxSGD(model.parameters(), mu = 0.0001)
 
 dataset = SeqDataset(signal_file, sequence_file)
+
 num_points = len(dataset)
-train_size = int(train_ratio * num_points)
-validation_size = int(validation_ratio * num_points)
-test_size = num_points - train_size - validation_size
 
-train_dataset, validation_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, validation_size, test_size])
+#train_size = int(train_ratio * num_points)
+#validation_size = int(validation_ratio * num_points)
+#test_size = num_points - train_size - validation_size
+#
+#train_dataset, validation_dataset, test_dataset = torch.utils.data.random_split(dataset, [train_size, validation_size, test_size])
+#
+train_indices = np.load(os.path.join(split_folder, "train_split.npy"))
+validation_indices = np.load(os.path.join(split_folder, "validation_split.npy"))
+test_indices = np.load(os.path.join(split_folder, "test_split.npy"))
 
-np.save(os.path.join(model_output, "train_split.npy"), train_dataset.indices)
-np.save(os.path.join(model_output, "validation_split.npy"), validation_dataset.indices)
-np.save(os.path.join(model_output, "test_split.npy"), test_dataset.indices)
+train_dataset = torch.utils.data.Subset(dataset, train_indices)
+test_dataset = torch.utils.data.Subset(dataset, test_indices)
+validation_dataset = torch.utils.data.Subset(dataset, validation_indices)
 
 train_dataloader = torch.utils.data.DataLoader(train_dataset, batch_size = batch_size, shuffle = True, pin_memory = True, num_workers = num_of_workers)
 number_of_step = len(train_dataset)
