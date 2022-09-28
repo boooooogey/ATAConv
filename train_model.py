@@ -24,8 +24,6 @@ parser.add_argument("--split_folder", required=True, help="Folder that stores tr
 parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--number_of_epochs", default=10, type=int, help="Number of epochs for training")
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
-parser.add_argument("--train_ratio", default=0.8, type=float, help="Train split ratio")
-parser.add_argument("--validation_ratio", default=0.1, type=float, help="Validation split ratio")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
 parser.add_argument("--num_of_heads", default = 8, type=int, help="Number of heads for attention layer")
 parser.add_argument("--penalty_param", default = 0.1, type=float, help="Hyperparameter for the regularization of the final layer")
@@ -41,8 +39,6 @@ signal_file = args.atac_file # "local/ATACseqSignal.first10k.txt"
 sequence_file = args.sequences # "local/sequences.list"
 batch_size = args.batch_size # 254
 model_output = args.model_output # "local/test/"
-train_ratio = args.train_ratio # 0.8
-validation_ratio = args.validation_ratio # 0.1
 num_of_workers = args.num_of_workers # 8
 num_heads = args.num_of_heads # 8
 penalty_param = args.penalty_param
@@ -52,7 +48,10 @@ split_folder = args.split_folder
 
 os.path.exists(model_output) or os.makedirs(model_output)
 
+device_name = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+print(device_name)
 
 model = MaskNet(8, meme_file, window_size, num_heads).to(device)
 
@@ -159,6 +158,7 @@ for e in range(number_of_epochs):
     model.save_model(os.path.join(model_output, f"model.{e}"))
 
     save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
+  model.train()
 
 testloss = []
 with torch.no_grad():
