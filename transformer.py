@@ -5,28 +5,29 @@ from IPython import embed
 import math
 
 class SelfAttention(nn.Module):
-  def __init__(self, k, heads=8):
+  def __init__(self, k, out_dim, heads=8):
     super().__init__()
-    self.k, self.heads = k, heads
+    self.k, self.out_dim, self.heads = k, out_dim, heads
 
-    self.tokeys = nn.Linear(k, k * heads, bias=False)
-    self.toqueries = nn.Linear(k, k * heads, bias=False)
-    self.tovalues = nn.Linear(k, k * heads, bias=False)
-    self.unifyheads = nn.Linear(heads * k, k)
+    self.tokeys = nn.Linear(k, out_dim * heads, bias=False)
+    self.toqueries = nn.Linear(k, out_dim * heads, bias=False)
+    self.tovalues = nn.Linear(k, out_dim * heads, bias=False)
+    self.unifyheads = nn.Linear(heads * out_dim, out_dim)
 
   def forward(self, x):
     b, k, t = x.size()
+    od = self.out_dim
     h = self.heads
 
-    keys = torch.einsum('bkt,jk->bjt', x, self.tokeys.weight).view(b, h, k, t)
-    queries = torch.einsum('bkt,jk->bjt', x, self.toqueries.weight).view(b, h, k, t)
-    values = torch.einsum('bkt,jk->bjt', x, self.tovalues.weight).view(b, h, k, t)
+    keys = torch.einsum('bkt,jk->bjt', x, self.tokeys.weight).view(b, h, od, t)
+    queries = torch.einsum('bkt,jk->bjt', x, self.toqueries.weight).view(b, h, od, t)
+    values = torch.einsum('bkt,jk->bjt', x, self.tovalues.weight).view(b, h, od, t)
 
-    dot = torch.einsum('bhkt,bhki->bhti', queries, keys) / math.sqrt(k)
+    dot = torch.einsum('bhkt,bhki->bhti', queries, keys) / math.sqrt(od)
     dot = F.softmax(dot, dim=-1)
 
     out = torch.einsum('bhti,bhki->bhkt', dot, values)
-    out = torch.einsum('bhet,khe->bkt', out, self.unifyheads.weight.view(k,h,k))
+    out = torch.einsum('bhet,khe->bkt', out, self.unifyheads.weight.view(od,h,od))
 
     return out + self.unifyheads.bias.view(1,-1,1)
 
@@ -66,7 +67,7 @@ class TransformerBlock(nn.Module):
   def __init__(self, k, heads):
     super().__init__()
 
-    self.attention = SelfAttention(k, heads=heads)
+    self.attention = SelfAttention(k, k, heads=heads)
 
     self.norm1 = nn.LayerNorm(k)
     self.norm2 = nn.LayerNorm(k)
