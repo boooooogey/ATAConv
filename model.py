@@ -85,7 +85,7 @@ class MaskNet(Module):
     self.maxpoolmask = MaxPool1d(kernel_size=self.out1_length * 2, stride=1)
 
     #Final regression layer. Only layer that does not share weights
-    self.linreg = ParameterList([Linear(in_features=int(out_channels/2), out_features=1) for i in range(num_of_response)])
+    self.linreg = ParameterList([Linear(in_features=int(out_channels/2), out_features=1, bias=False) for i in range(num_of_response)])
 
   def init_weights(self):
     for name, layer in self.named_children():
@@ -127,7 +127,7 @@ class MaskNet(Module):
 
     #Mask computations
     #mask = self.batchnorm1(x)
-    mask = self.relu1(mask)
+    mask = self.relu1(x)
 
     mask = self.conv2(mask)
     #mask = self.batchnorm2(mask)
@@ -149,6 +149,32 @@ class MaskNet(Module):
     
     #regression
     y = torch.hstack([l(y).view(-1,1) for l in self.linreg])
+
+    return y
+    
+  def masked(self, x):
+
+    x = self.transformer(x)
+
+    x = self.conv1(x)
+
+    #Mask computations
+    #mask = self.batchnorm1(x)
+    mask = self.relu1(x)
+
+    mask = self.conv2(mask)
+    #mask = self.batchnorm2(mask)
+    mask = self.relu2(mask)
+    mask = self.maxpool1(mask)
+
+    mask = flatten(mask, 1)
+    mask = self.lin1(mask)
+    mask = self.relu3(mask)
+
+    #Applying mask on the result of the first convolution
+    dim1, _, dim2 = x.shape
+    mask = mask.view(dim1, 1, dim2)
+    y = mask * x
 
     return y
     
