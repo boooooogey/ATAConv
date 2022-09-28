@@ -2,6 +2,8 @@ from model import MaskNet
 from utils import SeqDataset
 import torch
 from torch.optim import Adam
+from torch.optim import AdamW
+from torch.optim.lr_scheduler import ExponentialLR
 from adam import AdamL1, AdamMCP
 import os
 from IPython import embed
@@ -62,19 +64,24 @@ model = MaskNet(8, meme_file, window_size, num_heads).to(device)
 model.init_weights()
 
 #optimizer_seq = Adam([x[1] for x in model.named_parameters() if x[0] not in ["linreg.weight", "linreg.bias"]])
-if penalty_type == "l1":
-  optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
-                       'penalty_hyper_param': 0},
-                      {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
-                       'penalty_hyper_param': penalty_param}])
-elif penalty_type == "mcp":
-  optimizer = AdamMCP([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
-                        'penalty_hyper_param': 0},
-                       {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
-                        'penalty_hyper_param': penalty_param,
-                        'b': 3}])
+if penalty_param != 0:
+  if penalty_type == "l1":
+    optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
+                         'penalty_hyper_param': 0},
+                        {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
+                         'penalty_hyper_param': penalty_param}])
+  elif penalty_type == "mcp":
+    optimizer = AdamMCP([{'params': [i[1] for i in filter(lambda x: not x[0].startswith("linreg"), model.named_parameters())],
+                          'penalty_hyper_param': 0},
+                         {'params': [i[1] for i in filter(lambda x: x[0].startswith("linreg"), model.named_parameters())],
+                          'penalty_hyper_param': penalty_param,
+                          'b': 3}])
+  else:
+    raise ValueError(f"Invalid penalty type{penalty_type}.")
 else:
-  raise ValueError(f"Invalid penalty type{penalty_type}.")
+  optimizer = AdamW(model.parameters())
+
+scheduler = ExponentialLR(optimizer, gamma=0.9)
 
 #optimizer = Adam(model.parameters())
 #optimizer_linreg = ProxSGD([model.linreg.weight, model.linreg.bias], mu = 100000000)
@@ -105,13 +112,15 @@ test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_s
 
 validation_dataloader = torch.utils.data.DataLoader(validation_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
 
-loss = torch.nn.MSELoss(reduction="mean")
+#loss = torch.nn.MSELoss(reduction="mean")
+loss = torch.nn.L1Loss(reduction="mean")
 #embed()
 
 stats = {
     'train_average_loss' : [],
     'validation_average_loss' : [],
     'test_average_loss' : 0,
+    'sparsity': [],
     'completed' : False
     }
 
@@ -120,18 +129,18 @@ for e in range(number_of_epochs):
   validationloss = []
   model.train()
   for x, y in train_dataloader:
+    optimizer.zero_grad()
     x, y = x.to(device), y.to(device)
 
     pred = model(x)
     currloss = loss(pred, y)# + l1_param * model.linreg.weight.abs().sum()
-
-    optimizer.zero_grad()
 
     currloss.backward()
 
     optimizer.step()
 
     trainingloss.append(currloss.cpu().detach().numpy())
+  scheduler.step()
 
   with torch.no_grad():
     model.eval()
@@ -143,6 +152,7 @@ for e in range(number_of_epochs):
     num_zero = [torch.sum(l.weight == 0).cpu() for l in model.linreg]
     stats['train_average_loss'].append(np.mean(trainingloss))
     stats['validation_average_loss'].append(np.mean(validationloss))
+    stats['sparsity'].append((np.min(num_zero), np.max(num_zero)))
     print(f"Epoch {e+1}: Average loss (training) = {stats['train_average_loss'][-1]}")
     print(f"Epoch {e+1}: Average loss (validation) = {stats['validation_average_loss'][-1]}")
     print(f"Epoch {e+1}: Min. number of zero = {np.min(num_zero)}, Max. number of zero = {np.max(num_zero)}")

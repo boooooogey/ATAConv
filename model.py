@@ -4,6 +4,7 @@ from torch.nn import Module
 from torch.nn import Conv1d
 from torch.nn import Linear
 from torch.nn import MaxPool1d
+from torch.nn import BatchNorm1d
 from torch.nn import ReLU
 from torch.nn import ParameterList
 from torch import flatten
@@ -44,35 +45,41 @@ class MaskNet(Module):
     self.conv1.weight.requires_grad = False
 
     #Rest of the model
+    #self.batchnorm1 = BatchNorm1d(out_channels)
     self.relu1 = ReLU()
-    self.maxpool1 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
-    self.out2_length = int((self.out1_length - pool_kernel_size)/pool_stride) + 1
+    #self.maxpool1 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    #self.out2_length = int((self.out1_length - pool_kernel_size)/pool_stride) + 1
 
     #Second convolutional layer
     self.conv2 = Conv1d(in_channels=out_channels, 
                         out_channels=conv_num_channels, 
                         kernel_size=conv_kernel_size, stride=stride)
 
-    self.out3_length = int((self.out2_length - conv_kernel_size) / stride) + 1
+    #self.out3_length = int((self.out2_length - conv_kernel_size) / stride) + 1
+    self.out2_length = int((self.out1_length - conv_kernel_size) / stride) + 1
 
+    #self.batchnorm2 = BatchNorm1d(conv_num_channels)
     self.relu2 = ReLU()
-    self.maxpool2 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
-    self.out4_length = int((self.out3_length - pool_kernel_size)/pool_stride) + 1
+    #self.maxpool2 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    #self.out4_length = int((self.out3_length - pool_kernel_size)/pool_stride) + 1
 
     #Third convolutional layer
-    self.conv3 = Conv1d(in_channels=conv_num_channels, 
-                        out_channels=conv_num_channels, 
-                        kernel_size=conv_kernel_size, stride=stride)
+    #self.conv3 = Conv1d(in_channels=conv_num_channels, 
+    #                    out_channels=conv_num_channels, 
+    #                    kernel_size=conv_kernel_size, stride=stride)
 
-    self.out5_length = int((self.out4_length - conv_kernel_size) / stride) + 1
+    #self.out5_length = int((self.out4_length - conv_kernel_size) / stride) + 1
 
-    self.relu3 = ReLU()
-    self.maxpool3 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
-    self.out6_length = int((self.out5_length - pool_kernel_size)/pool_stride) + 1
+    #self.relu3 = ReLU()
+    #self.maxpool3 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    self.maxpool1 = MaxPool1d(kernel_size=pool_kernel_size, stride=pool_stride)
+    #self.out6_length = int((self.out5_length - pool_kernel_size)/pool_stride) + 1
+    self.out3_length = int((self.out2_length - pool_kernel_size)/pool_stride) + 1
 
     #Linear Layer
-    self.lin1 = Linear(in_features=self.out6_length * conv_num_channels, out_features=self.out1_length)
-    self.relu4 = ReLU()
+    #self.lin1 = Linear(in_features=self.out6_length * conv_num_channels, out_features=self.out1_length)
+    self.lin1 = Linear(in_features=self.out3_length * conv_num_channels, out_features=self.out1_length)
+    self.relu3 = ReLU()
 
     # self.out1_length * 2 to max pool for both direction ( motif reverse and forward )
     self.maxpoolmask = MaxPool1d(kernel_size=self.out1_length * 2, stride=1)
@@ -119,32 +126,54 @@ class MaskNet(Module):
     x = self.conv1(x)
 
     #Mask computations
-    mask = self.relu1(x)
-    mask = self.maxpool1(mask)
+    #mask = self.batchnorm1(x)
+    mask = self.relu1(mask)
 
     mask = self.conv2(mask)
+    #mask = self.batchnorm2(mask)
     mask = self.relu2(mask)
-    mask = self.maxpool2(mask)
-
-    mask = self.conv3(mask)
-    mask = self.relu3(mask)
-    mask = self.maxpool3(mask)
+    mask = self.maxpool1(mask)
 
     mask = flatten(mask, 1)
     mask = self.lin1(mask)
-    mask = self.relu4(mask)
+    mask = self.relu3(mask)
 
     #Applying mask on the result of the first convolution
     dim1, _, dim2 = x.shape
-    mask = mask.reshape(dim1, 1, dim2)
+    mask = mask.view(dim1, 1, dim2)
     y = mask * x
 
     #maxpooling is run over 2 consecutive channels, 5' and 3' directions.
     y = self.maxpoolmask(y.view(y.shape[0], int(y.shape[1]/2), int(y.shape[2]*2)))
-    y = y.reshape(y.shape[0], y.shape[1])
+    y = y.view(y.shape[0], y.shape[1])
     
     #regression
     y = torch.hstack([l(y).view(-1,1) for l in self.linreg])
 
     return y
     
+#  def forward(self, x):
+#
+#    x = self.transformer(x)
+#
+#    x = self.conv1(x)
+#
+#    #Mask computations
+#    mask = self.relu1(x)
+#    mask = self.maxpool1(mask)
+#
+#    mask = self.conv2(mask)
+#    mask = self.relu2(mask)
+#    mask = self.maxpool2(mask)
+#
+#    mask = self.conv3(mask)
+#    mask = self.relu3(mask)
+#    mask = self.maxpool3(mask)
+#
+#    mask = flatten(mask, 1)
+#    mask = self.lin1(mask)
+#    mask = self.relu4(mask)
+#
+#    #Applying mask on the result of the first convolution
+#    dim1, _, dim2 = x.shape
+#    mask = mask.reshape(dim1, 1, dim2)
