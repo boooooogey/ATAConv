@@ -111,8 +111,8 @@ test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_s
 
 validation_dataloader = torch.utils.data.DataLoader(validation_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
 
-#loss = torch.nn.MSELoss(reduction="mean")
-loss = torch.nn.L1Loss(reduction="mean")
+loss = torch.nn.MSELoss(reduction="mean")
+#loss = torch.nn.L1Loss(reduction="mean")
 #embed()
 
 stats = {
@@ -158,7 +158,6 @@ for e in range(number_of_epochs):
     model.save_model(os.path.join(model_output, f"model.{e}"))
 
     save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
-  model.train()
 
 testloss = []
 with torch.no_grad():
