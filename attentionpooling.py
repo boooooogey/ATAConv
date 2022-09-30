@@ -28,12 +28,14 @@ class AttentionPooling1D(torch.nn.Module):
     b, c, l = x.shape
     kernel_size = self.kernel_size
     if l % kernel_size != 0:
-      pad_size = kernel_size - l % kernel_size 
-      pad_left = kernel_size // 2
-      pad_right = pad_size - pad_left
+      #pad_size = kernel_size - l % kernel_size 
+      #pad_left = kernel_size // 2
+      #pad_right = pad_size - pad_left
+      #x = torch.nn.functional.pad(x, (pad_left, pad_right), mode="constant", value=0)#value=1/self.feature_size)
 
-      x = torch.nn.functional.pad(x, (pad_left, pad_right), mode="constant", value=1/self.feature_size)
-      l = x.shape[2]
+      sub_length = (l//kernel_size) * kernel_size
+      x = x[:, :, :sub_length]
+      l = sub_length 
 
     x = x.view(b, c, l//kernel_size, kernel_size)
 
