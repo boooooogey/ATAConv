@@ -12,7 +12,7 @@ import pickle
 import numpy as np
 import argparse
 
-# add
+# added
 import sys
 import os 
 from aitac import *
@@ -26,15 +26,15 @@ def save_to_pickle(data, filepath):
 parser = argparse.ArgumentParser()
 parser.add_argument("--meme_file", default=f"{PREFIX}/cisBP_mouse.meme", help="Path to the meme file that stores PWMs")
 parser.add_argument("--atac_file", default=f"{PREFIX}/lineageImmgenDataZ.txt", help="Path to the file that stores ATAC signal")
-parser.add_argument("--sequences",default=f"{PREFIX}/sequences.list", help="Path to the file that stores sequences")
+parser.add_argument("--sequences",default=f"{PREFIX}/sequences250.list", help="Path to the file that stores sequences")
 parser.add_argument("--model_output",default=f"{PREFIX}/outputs", help="Directory to store model parameters")
 parser.add_argument("--split_folder",default=f"{PREFIX}/splits", help="Folder that stores train/val/test splits.")
-parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
+parser.add_argument("--window_size", default=250, type=int, help="Length of the sequence fragments")
 parser.add_argument("--number_of_epochs", default=10000, type=int, help="Number of epochs for training")
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
 
-parser.add_argument("--model", default = f"{PREFIX}/outputs/model.371", help="Start from the given state.")
+parser.add_argument("--model", default = f"{PREFIX}/aitac_checkpoint", help="Start from the given state.")
 #parser.add_argument("--model", default = None, help="Start from the given state.")
 
 parser.add_argument("--num_of_heads", default = 8, type=int, help="Number of heads for attention layer")
@@ -42,8 +42,8 @@ parser.add_argument("--penalty_param", default = 0.1, type=float, help="Hyperpar
 parser.add_argument("--mcp_param", default = 3, type=float, help="Second hyperparameter for the mcp regularization of the final layer (first is --penalty_param)")
 parser.add_argument("--penalty_type", default="l1", help="l1/mcp regularization")
 
-parser.add_argument("--lr", default = 0.001, type=float, help="Learning rate")                                                                               
-#parser.add_argument("--lr", default = None, type=float, help="Learning rate")                                                                               
+#parser.add_argument("--lr", default = 0.001, type=float, help="Learning rate")                                                                               
+parser.add_argument("--lr", default = None, type=float, help="Learning rate")                                                                               
 
 parser.add_argument("--response_num", default = 8, type=int, help="number of signals to predict")                                                          
 
@@ -69,7 +69,7 @@ response_dim = args.response_num
 # Added to recapitulate
 num_filters=300
 
-if model_name is None:                                                                                                                                     
+if model_name is None or model_name.endswith("aitac_checkpoint"):                                                                                                                                     
     model_i = 0                                                                                                                                            
 else:                                                                                                                                                      
     model_i = int(model_name.split(".")[-1])                                                                                                               
@@ -93,11 +93,16 @@ model = ConvNet(num_classes=response_dim, num_filters=num_filters).to(device)
 #mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
 #mem = mem_params + mem_bufs # in bytes
 
-if model_name is None:                                                                                                                                     
-  pass
-  #model.init_weights()                                                                                                                                   
+if model_name is None or not model_name.endswith("aitac_checkpoint"):                                                                                                                                     
+  model.init_weights()                                                                                                                                   
 else:                                                                                                                                                      
-    model.load_model(model_name)
+  print("loading model")
+  model.load_model(model_name)
+
+# for n, l in model.named_parameters():
+#   if n != "layer6":
+#     for c in l:
+#       c.requires_grad_(False)
 
 # OLD IMPLEMENTATION ===
 #optimizer_seq = Adam([x[1] for x in model.named_parameters() if x[0] not in ["linreg.weight", "linreg.bias"]])

@@ -6,6 +6,14 @@ import random
 import numpy as np
 import copy
 
+# added for init_weights
+from torch.nn import Conv2d
+from torch.nn import Linear
+from torch.nn import MaxPool1d
+from torch.nn import BatchNorm1d
+from torch.nn import ReLU
+from torch.nn import ParameterList
+
 # Convolutional neural network
 class ConvNet(nn.Module):
     def __init__(self, num_classes, num_filters):
@@ -21,9 +29,14 @@ class ConvNet(nn.Module):
                       padding=0),  # padding is done in forward method along 1 dimension only
             nn.ReLU())
 
+        self.layer1_conv.requires_grad = False
+
         self.layer1_process = nn.Sequential(
             nn.MaxPool2d(kernel_size=(1,3), stride=(1,3), padding=(0,1)),
             nn.BatchNorm2d(num_filters))
+
+        # iffy
+        self.layer1_process.requires_grad = False
 
         self.layer2 = nn.Sequential(
             nn.Conv2d(in_channels=num_filters,
@@ -35,6 +48,8 @@ class ConvNet(nn.Module):
             nn.MaxPool2d(kernel_size=(1,4), stride=(1,4), padding=(0,1)),
             nn.BatchNorm2d(200))
 
+        self.layer2.requires_grad = False
+
         self.layer3 = nn.Sequential(
             nn.Conv2d(in_channels=200,
                       out_channels=200,
@@ -44,23 +59,31 @@ class ConvNet(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=(1, 4), stride=(1,4), padding=(0,1)),
             nn.BatchNorm2d(200))
+        
+        self.layer3.requires_grad = False
 
-        # self.layer4 = nn.Sequential(
-        #     nn.Linear(in_features=1000,
-        #               out_features=1000),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.03))
         self.layer4 = nn.Sequential(
-            nn.Linear(in_features=1200,
+            nn.Linear(in_features=1000,
                       out_features=1000),
             nn.ReLU(),
             nn.Dropout(p=0.03))
+        
+
+        self.layer4.requires_grad = False
+
+        # self.layer4 = nn.Sequential(
+        #     nn.Linear(in_features=1200,
+        #               out_features=1000),
+        #     nn.ReLU(),
+        #     nn.Dropout(p=0.03))
 
         self.layer5 = nn.Sequential(
             nn.Linear(in_features=1000,
                       out_features=1000),
             nn.ReLU(),
             nn.Dropout(p=0.03))
+        
+        self.layer5.requires_grad = False
 
         self.layer6 = nn.Sequential(
                 nn.Linear(in_features=1000,
@@ -97,6 +120,21 @@ class ConvNet(nn.Module):
         
         #return predictions, activations, act_index
         return predictions
+
+    # added
+    def init_weights(self):                                                                                                                                  
+        for name, layer in self.named_children():                                                                                                              
+            if name == "layer6":
+                for sublayer in layer.children():
+                    torch.nn.init.kaiming_uniform_(sublayer.weight, nonlinearity = "linear")                                                                             
+            else:
+                for sublayer in layer.children():
+                    if isinstance(sublayer, Linear):                                                                                                                      
+                        torch.nn.init.kaiming_uniform_(sublayer.weight, nonlinearity = "relu")                                                                              
+                    elif isinstance(sublayer, Conv2d):                                                                                                                    
+                        torch.nn.init.kaiming_normal_(sublayer.weight, nonlinearity = "relu")                                                                               
+                    else:
+                        pass
 
     def save_model(self, path):
         torch.save(self.state_dict(), path)
