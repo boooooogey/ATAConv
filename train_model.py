@@ -1,14 +1,10 @@
-from model import TISFM
-from utils import SeqDataset
-import torch
-from torch.optim import AdamW
+from models.model_pos_calib_sigmoid import TISFM
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from adam_penalty import AdamL1, AdamMCP
-import os
-from IPython import embed
-import pickle
-import numpy as np
-import argparse
+from torch.optim import AdamW
+from utils import SeqDataset
+import torch, numpy as np
+import os, pickle, argparse
 
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
@@ -75,9 +71,9 @@ else:
 
 dataset = SeqDataset(signal_file, sequence_file)
 
-train_indices = np.load(os.path.join(split_folder, "train_split.npy"))[:80000]
-validation_indices = np.load(os.path.join(split_folder, "validation_split.npy"))[:10000]
-test_indices = np.load(os.path.join(split_folder, "test_split.npy"))[:10000]
+train_indices = np.load(os.path.join(split_folder, "train_split.npy"))
+validation_indices = np.load(os.path.join(split_folder, "validation_split.npy"))
+test_indices = np.load(os.path.join(split_folder, "test_split.npy"))
 
 train_dataset = torch.utils.data.Subset(dataset, train_indices)
 test_dataset = torch.utils.data.Subset(dataset, test_indices)

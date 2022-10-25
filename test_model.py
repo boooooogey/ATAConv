@@ -1,12 +1,7 @@
-import pickle
-import torch
-import numpy as np
-import pandas as pd
-import argparse
-import os
-from model import TISFM
+from models.model_pos_calib_sigmoid import TISFM
 from utils import SeqDataset
-from IPython import embed
+import torch, numpy as np
+import os, pickle, argparse, pandas as pd
 
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
@@ -58,7 +53,7 @@ model.load_model(model_name)
 
 dataset = SeqDataset(signal_file, sequence_file)
 
-test_indices = np.load(os.path.join(split_folder, "test_split.npy"))[:10000]
+test_indices = np.load(os.path.join(split_folder, "test_split.npy"))
 test_dataset = torch.utils.data.Subset(dataset, test_indices)
 
 test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
