@@ -36,9 +36,9 @@ class TISFM(Module):
     self.position_emb = Embedding(int(np.ceil(window_size/2)), 1)
 
     #First layer convolution. Weights set to motifs and are fixed.
-    self.conv1 = Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride)
-    self.conv1.weight = torch.nn.Parameter(kernels)
-    self.conv1.weight.requires_grad = False
+    self.conv_motif = Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride)
+    self.conv_motif.weight = torch.nn.Parameter(kernels)
+    self.conv_motif.weight.requires_grad = False
     self.out1_length = int((window_size - kernel_size) / stride) + 1
 
     self.conv_bias = Parameter(torch.empty(1, out_channels, 1, requires_grad = True))
@@ -56,7 +56,7 @@ class TISFM(Module):
 
   def init_weights(self):
     for name, layer in self.named_children():
-      if name == "conv1":
+      if name == "conv_motif":
         pass
       else:
         if isinstance(layer, Linear):
@@ -71,6 +71,9 @@ class TISFM(Module):
 
   def load_model(self, path):
     self.load_state_dict(torch.load(path))
+
+  def unfreeze(self):
+    self.conv_motif.weight.requires_grad = True
 
   def forward(self, x):
 
@@ -88,7 +91,7 @@ class TISFM(Module):
     #positional embedding
     x = x + pos
 
-    x = self.conv1(x)
+    x = self.conv_motif(x)
 
     #convolution calibration
     x = torch.einsum("bcl, c -> bcl", x, self.conv_scale) + self.conv_bias

@@ -1,10 +1,10 @@
-from models.model_pos_calib_sigmoid import TISFM
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from adam_penalty import AdamL1, AdamMCP
 from torch.optim import AdamW
 from utils import SeqDataset
 import torch, numpy as np
 import os, pickle, argparse
+from importlib import import_module
 
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
@@ -16,6 +16,7 @@ parser.add_argument("--atac_file", required=True, help="Path to the file that st
 parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
 parser.add_argument("--model_output", required=True, help="Directory to store model parameters")
 parser.add_argument("--split_folder", required=True, help="Folder that stores train/val/test splits.")
+parser.add_argument("--architecture", required=True, help="Architecture to be used.")
 parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--number_of_epochs", default=10, type=int, help="Number of epochs for training")
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
@@ -30,15 +31,16 @@ parser.add_argument("--unfreeze_conv", action='store_true', help="Whether to unf
 
 args = parser.parse_args()
 
-meme_file = args.meme_file # "../motif-Convo-orion/local/Test.meme"
-signal_file = args.atac_file # "local/ATACseqSignal.first10k.txt"
-sequence_file = args.sequences # "local/sequences.list"
-model_output = args.model_output # "local/test/"
+meme_file = args.meme_file
+signal_file = args.atac_file
+sequence_file = args.sequences
+model_output = args.model_output
 split_folder = args.split_folder
-window_size = args.window_size # 300
-number_of_epochs = args.number_of_epochs # 2
-batch_size = args.batch_size # 254
-num_of_workers = args.num_of_workers # 8
+architecture_name = args.architecture
+window_size = args.window_size
+number_of_epochs = args.number_of_epochs
+batch_size = args.batch_size
+num_of_workers = args.num_of_workers
 penalty_param = args.penalty_param
 mcp_beta = args.mcp_param
 penalty_type = args.penalty_type
@@ -57,11 +59,12 @@ os.path.exists(model_output) or os.makedirs(model_output)
 device_name = "cuda" if torch.cuda.is_available() else "cpu"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-print(device_name)
+print(f"Device: {device_name}")
 
-model = TISFM(response_dim, meme_file, window_size).to(device)
+architecture = import_module(f"models.{architecture_name}")
+model = architecture.TISFM(response_dim, meme_file, window_size).to(device)
 if unfreeze:
-  model.conv1.weight.requires_grad = True
+  model.unfreeze()
 
 
 if model_name is None:
@@ -128,6 +131,7 @@ else:
   optimizer = AdamW(model.parameters(), lr=learning_rate)
 
 scheduler = ReduceLROnPlateau(optimizer)
+stats['lr'] = []
 
 for e in range(model_i+1, model_i + number_of_epochs+1):
   trainingloss = [] 

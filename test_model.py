@@ -1,7 +1,7 @@
-from models.model_pos_calib_sigmoid import TISFM
 from utils import SeqDataset
 import torch, numpy as np
 import os, pickle, argparse, pandas as pd
+from importlib import import_module
 
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
@@ -16,10 +16,11 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--meme_file", required=True, help="Path to the meme file that stores PWMs")
 parser.add_argument("--atac_file", required=True, help="Path to the file that stores ATAC signal")
 parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
-parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
-parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
 parser.add_argument("--model", required=True, help="Model file or directory")
 parser.add_argument("--split_folder", required=True, help="Folder that stores train/val/test splits.")
+parser.add_argument("--architecture", required=True, help="Architecture to be used.")
+parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
+parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
 parser.add_argument("--stat_out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
@@ -29,18 +30,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 args = parser.parse_args()
 
-meme_file = args.meme_file # "../motif-Convo-orion/local/Test.meme"
-window_size = args.window_size # 300
-signal_file = args.atac_file # "local/ATACseqSignal.first10k.txt"
-sequence_file = args.sequences # "local/sequences.list"
-num_of_workers = args.num_of_workers # 8
+meme_file = args.meme_file
+signal_file = args.atac_file
+sequence_file = args.sequences
 model_name = args.model
 split_folder = args.split_folder
-batch_size = args.batch_size # 254
+architecture_name = args.architecture
+window_size = args.window_size
+batch_size = args.batch_size
+num_of_workers = args.num_of_workers
 file_stat = args.stat_out
 isaiatac = args.ai_atac
 
-model = TISFM(8, meme_file, window_size).to(device)
+architecture = import_module(f"models.{architecture_name}")
+model = architecture.TISFM(8, meme_file, window_size).to(device)
 
 if os.path.isdir(model_name):
   stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
