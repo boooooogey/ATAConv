@@ -102,7 +102,7 @@ if not isaiatac:
   print(f"Pax5's rank for B: {pax5_ii[0]}")
   print(f"Irf4's rank for B: {irf4_ii[0]}")
   print(f"Ebf1's rank for B: {ebf1_ii[0]}")
-  print(f"Rorc's rank for B: {rorc_ii[0]}")
+  print(f"Rorc's rank for innate.lym: {rorc_ii[0]}")
 
 out = pd.DataFrame(out_stat)
 #keeping the path, could be useful later
