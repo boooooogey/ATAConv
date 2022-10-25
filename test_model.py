@@ -22,9 +22,10 @@ parser.add_argument("--architecture", required=True, help="Architecture to be us
 parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
+parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
 parser.add_argument("--stat_out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
-
+parser.add_argument("--class_name", default="TISFM", help="Model class name.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -39,11 +40,13 @@ architecture_name = args.architecture
 window_size = args.window_size
 batch_size = args.batch_size
 num_of_workers = args.num_of_workers
+response_dim = args.response_num
 file_stat = args.stat_out
 isaiatac = args.ai_atac
+class_name = args.class_name
 
-architecture = import_module(f"models.{architecture_name}")
-model = architecture.TISFM(8, meme_file, window_size).to(device)
+architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
+model = architecture(response_dim, meme_file, window_size).to(device)
 
 if os.path.isdir(model_name):
   stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))

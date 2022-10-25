@@ -28,6 +28,7 @@ parser.add_argument("--model", default=None, help="Start from the given state.")
 parser.add_argument("--lr", default=None, type=float, help="Learning rate")
 parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
 parser.add_argument("--unfreeze_conv", action='store_true', help="Whether to unfreeze the motifs or to keep them frozen (default: false)") 
+parser.add_argument("--class_name", default="TISFM", help="Model class name.")
 
 args = parser.parse_args()
 
@@ -48,6 +49,7 @@ model_name = args.model
 learning_rate = args.lr
 response_dim = args.response_num
 unfreeze = args.unfreeze_conv
+class_name = args.class_name
 
 if model_name is None:
     model_i = -1
@@ -61,8 +63,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print(f"Device: {device_name}")
 
-architecture = import_module(f"models.{architecture_name}")
-model = architecture.TISFM(response_dim, meme_file, window_size).to(device)
+architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
+model = architecture(response_dim, meme_file, window_size).to(device)
 if unfreeze:
   model.unfreeze()
 
