@@ -62,20 +62,19 @@ class ConvNet(nn.Module):
         
         self.layer3.requires_grad = False
 
+        # self.layer4 = nn.Sequential(
+        #     nn.Linear(in_features=1000,
+        #               out_features=1000),
+        #     nn.ReLU(),
+        #     nn.Dropout(p=0.03))
+
         self.layer4 = nn.Sequential(
-            nn.Linear(in_features=1000,
+            nn.Linear(in_features=1200,
                       out_features=1000),
             nn.ReLU(),
             nn.Dropout(p=0.03))
         
-
         self.layer4.requires_grad = False
-
-        # self.layer4 = nn.Sequential(
-        #     nn.Linear(in_features=1200,
-        #               out_features=1000),
-        #     nn.ReLU(),
-        #     nn.Dropout(p=0.03))
 
         self.layer5 = nn.Sequential(
             nn.Linear(in_features=1000,
@@ -89,7 +88,6 @@ class ConvNet(nn.Module):
                 nn.Linear(in_features=1000,
                           out_features=num_classes))#,
                 #nn.Sigmoid())
-
 
     def forward(self, input):
         # run all layers on input data
@@ -114,6 +112,7 @@ class ConvNet(nn.Module):
         # run fully connected layers
         out = self.layer4(out)
         out = self.layer5(out)
+
         predictions = self.layer6(out)
         
         activations, act_index = torch.max(activations, dim=2)

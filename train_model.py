@@ -15,7 +15,10 @@ import argparse
 # added
 import sys
 import os 
+
 from aitac import *
+from explainn.models import networks
+from explainn.utils import *
 
 PREFIX="/net/talisker/home/benos/mae117/collaborations/atac_convolutions/data"
 
@@ -34,8 +37,8 @@ parser.add_argument("--number_of_epochs", default=10000, type=int, help="Number 
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
 
-parser.add_argument("--model", default = f"{PREFIX}/aitac_checkpoint", help="Start from the given state.")
-#parser.add_argument("--model", default = None, help="Start from the given state.")
+#parser.add_argument("--model", default = f"{PREFIX}/aitac_checkpoint", help="Start from the given state.")
+parser.add_argument("--model", default = None, help="Start from the given state.")
 
 parser.add_argument("--num_of_heads", default = 8, type=int, help="Number of heads for attention layer")
 parser.add_argument("--penalty_param", default = 0.1, type=float, help="Hyperparameter for the regularization of the final layer")
@@ -74,7 +77,6 @@ if model_name is None or model_name.endswith("aitac_checkpoint"):
 else:                                                                                                                                                      
     model_i = int(model_name.split(".")[-1])                                                                                                               
 
-
 grad_path = os.path.join(model_output, "grad")                             
                                                                            
 os.path.exists(model_output) or os.makedirs(model_output)                  
@@ -87,7 +89,8 @@ print(device_name)
 
 #model = MaskNet(8, meme_file, window_size, num_heads).to(device)
 model = ConvNet(num_classes=response_dim, num_filters=num_filters).to(device)
-
+#model = networks.ExplaiNN(num_cnns=256, input_length=window_size, num_classes=response_dim, filter_size=num_filters, num_fc=2,
+# pool_size=2, pool_stride=2,weight_path=meme_file)
 
 #mem_params = sum([param.nelement()*param.element_size() for param in model.parameters()])
 #mem_bufs = sum([buf.nelement()*buf.element_size() for buf in model.buffers()])
@@ -98,6 +101,8 @@ if model_name is None or not model_name.endswith("aitac_checkpoint"):
 else:                                                                                                                                                      
   print("loading model")
   model.load_model(model_name)
+
+model.to(device)
 
 # for n, l in model.named_parameters():
 #   if n != "layer6":

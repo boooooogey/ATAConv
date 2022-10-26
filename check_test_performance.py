@@ -17,11 +17,17 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument("--meme_file", default=f"{PREFIX}/cisBP_mouse.meme", help="Path to the meme file that stores PWMs")                                    
 parser.add_argument("--atac_file", default=f"{PREFIX}/lineageImmgenDataZ.txt", help="Path to the file that stores ATAC signal")                            
-parser.add_argument("--sequences",default=f"{PREFIX}/sequences250.list", help="Path to the file that stores sequences")                                       
+
+#parser.add_argument("--sequences",default=f"{PREFIX}/sequences250.list", help="Path to the file that stores sequences")                                       
+parser.add_argument("--sequences",default=f"{PREFIX}/sequences.list", help="Path to the file that stores sequences")                                       
+
 parser.add_argument("--split_folder",default=f"{PREFIX}/splits", help="Folder that stores train/val/test splits.")                                         
-parser.add_argument("--test",default=f"{PREFIX}/outputs/test_results/test_results-14.npy", help="File save")
-parser.add_argument("--model", default = f"{PREFIX}/outputs/model.14", help="Start from the given state.")
-parser.add_argument("--window_size", default=250, type=int, help="Length of the sequence fragments")                                                       
+parser.add_argument("--test",default=f"{PREFIX}/outputs/test_results/test_results_with-seq250-list.npy", help="File save")
+parser.add_argument("--model", default = f"{PREFIX}/outputs/model.4", help="Start from the given state.")
+
+#parser.add_argument("--window_size", default=250, type=int, help="Length of the sequence fragments")                                                       
+parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")                                                       
+
 parser.add_argument("--number_of_epochs", default=10000, type=int, help="Number of epochs for training")                                                   
 parser.add_argument("--batch_size", default=254, type=int, help="Batch size")                                                                              
 parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
