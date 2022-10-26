@@ -13,19 +13,19 @@ def read_from_pickle(filepath):
   return data
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--meme_file", required=True, help="Path to the meme file that stores PWMs")
-parser.add_argument("--atac_file", required=True, help="Path to the file that stores ATAC signal")
+parser.add_argument("--meme-file", required=True, help="Path to the meme file that stores PWMs")
+parser.add_argument("--atac-file", required=True, help="Path to the file that stores ATAC signal")
 parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
 parser.add_argument("--model", required=True, help="Model file or directory")
-parser.add_argument("--split_folder", required=True, help="Folder that stores train/val/test splits.")
+parser.add_argument("--split-folder", required=True, help="Folder that stores train/val/test splits.")
 parser.add_argument("--architecture", required=True, help="Architecture to be used.")
-parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
-parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
-parser.add_argument("--num_of_workers", default = 8, type=int, help="Number of workers for data loading")
-parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
-parser.add_argument("--stat_out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
+parser.add_argument("--window-size", default=300, type=int, help="Length of the sequence fragments")
+parser.add_argument("--batch-size", default=254, type=int, help="Batch size")
+parser.add_argument("--num-of-workers", default = 8, type=int, help="Number of workers for data loading")
+parser.add_argument("--response-num", default=8, type=int, help="number of signals to predict")
+parser.add_argument("--stat-out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
-parser.add_argument("--class_name", default="TISFM", help="Model class name.")
+parser.add_argument("--class-name", default="TISFM", help="Model class name.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -49,11 +49,15 @@ architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
 model = architecture(response_dim, meme_file, window_size).to(device)
 
 if os.path.isdir(model_name):
-  stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
-  ii = np.argmin(stats["validation_average_loss"])
-  print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
-  file_stat = os.path.join(model_name, "best.tsv")
-  model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
+  if os.path.exists(os.path.join(model_name, "model.best")):
+    file_stat = os.path.join(model_name, "best.tsv")
+    model_name = os.path.join(model_name, f"model.best")
+  else:
+    stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
+    ii = np.argmin(stats["validation_average_loss"])
+    print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
+    file_stat = os.path.join(model_name, "best.tsv")
+    model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
 
 model.load_model(model_name)
 

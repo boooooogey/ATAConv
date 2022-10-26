@@ -11,24 +11,27 @@ def save_to_pickle(data, filepath):
     pickle.dump(data, file)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--meme_file", required=True, help="Path to the meme file that stores PWMs")
-parser.add_argument("--atac_file", required=True, help="Path to the file that stores ATAC signal")
+parser.add_argument("--meme-file", required=True, help="Path to the meme file that stores PWMs")
+parser.add_argument("--atac-file", required=True, help="Path to the file that stores ATAC signal")
 parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
-parser.add_argument("--model_output", required=True, help="Directory to store model parameters")
-parser.add_argument("--split_folder", required=True, help="Folder that stores train/val/test splits.")
+parser.add_argument("--model-output", required=True, help="Directory to store model parameters")
+parser.add_argument("--split-folder", required=True, help="Folder that stores train/val/test splits.")
 parser.add_argument("--architecture", required=True, help="Architecture to be used.")
-parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
-parser.add_argument("--number_of_epochs", default=10, type=int, help="Number of epochs for training")
-parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
-parser.add_argument("--num_of_workers", default=8, type=int, help="Number of workers for data loading")
-parser.add_argument("--penalty_param", default=0, type=float, help="Hyperparameter for the regularization of the final layer")
-parser.add_argument("--mcp_param", default=3, type=float, help="Second hyperparameter for the mcp regularization of the final layer (first is --penalty_param)")
-parser.add_argument("--penalty_type", default="l1", help="l1/mcp regularization")
+parser.add_argument("--window-size", default=300, type=int, help="Length of the sequence fragments")
+parser.add_argument("--number-of-epochs", default=10, type=int, help="Number of epochs for training")
+parser.add_argument("--batch-size", default=254, type=int, help="Batch size")
+parser.add_argument("--num-of-workers", default=8, type=int, help="Number of workers for data loading")
+parser.add_argument("--penalty-param", default=0, type=float, help="Hyperparameter for the regularization of the final layer")
+parser.add_argument("--mcp-param", default=3, type=float, help="Second hyperparameter for the mcp regularization of the final layer (first is --penalty_param)")
+parser.add_argument("--penalty-type", default="l1", help="l1/mcp regularization")
 parser.add_argument("--model", default=None, help="Start from the given state.")
 parser.add_argument("--lr", default=None, type=float, help="Learning rate")
-parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
-parser.add_argument("--unfreeze_conv", action='store_true', help="Whether to unfreeze the motifs or to keep them frozen (default: false)") 
-parser.add_argument("--class_name", default="TISFM", help="Model class name.")
+parser.add_argument("--response-num", default=8, type=int, help="number of signals to predict")
+parser.add_argument("--unfreeze-conv", action='store_true', help="Whether to unfreeze the motifs or to keep them frozen (default: false)") 
+parser.add_argument("--class-name", default="TISFM", help="Model class name.")
+parser.add_argument("--save-all", action='store_true', help="Whether to save at the end of every epoch.") 
+parser.add_argument("--early-stopping", action='store_true', help="Whether to stop training early if validation MSE does not improve.") 
+parser.add_argument("--early-stopping-threshold", default=1e-7, help="If early stopping is set, the learning rate is checked to decide whether to stop training.") 
 
 args = parser.parse_args()
 
@@ -50,8 +53,11 @@ learning_rate = args.lr
 response_dim = args.response_num
 unfreeze = args.unfreeze_conv
 class_name = args.class_name
+save_all = args.save_all
+early_stopping = args.early_stopping
+es_threshold = args.early_stopping_threshold
 
-if model_name is None:
+if model_name is None or model_name.endswith("model.best"):
     model_i = -1
 else:
     model_i = int(model_name.split(".")[-1])
@@ -100,6 +106,10 @@ if model_i != -1 and os.path.exists(os.path.join(model_output, "stats.pkl")):
     stats['validation_average_loss'] = stats['validation_average_loss'][:model_i+1]
     stats['lr'] = stats['lr'][:model_i+1]
     stats['epoch'] = stats['epoch'][:model_i+1]
+elif model_name.endswith("model.best"):
+    with open(os.path.join(model_output, "stats.pkl"), "rb") as file:
+        stats = pickle.load(file)
+    model_i =stats['epoch'][-1]
 else:
     stats = {
         'train_average_loss' : [],
@@ -163,10 +173,19 @@ for e in range(model_i+1, model_i + number_of_epochs+1):
     stats['validation_average_loss'].append(np.mean(validationloss))
     stats['lr'].append(scheduler.optimizer.param_groups[0]['lr'])
     stats['epoch'].append(e)
-    print(f"Epoch {e}: Average loss (training) = {stats['train_average_loss'][-1]}\tAverage loss (validation) = {stats['validation_average_loss'][-1]}\nLearning rate = {scheduler.optimizer.param_groups[0]['lr']}")
-    model.save_model(os.path.join(model_output, f"model.{e}"))
+    print(f"Epoch {e}: Average loss (training) = {stats['train_average_loss'][-1]:.5f}\tAverage loss (validation) = {stats['validation_average_loss'][-1]:.5f}\nLearning rate = {scheduler.optimizer.param_groups[0]['lr']}")
+    if save_all:
+      model.save_model(os.path.join(model_output, f"model.{e}"))
+    else:
+      if np.argmin(stats['validation_average_loss']) == (len(stats['validation_average_loss'])-1):
+        print("Validation MSE improved. Saving the model.")
+        model.save_model(os.path.join(model_output, "model.best"))
 
     save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
+
+  if early_stopping and scheduler.optimizer.param_groups[0]['lr'] <= es_threshold:
+    print("Early stopping!")
+    break
 
   scheduler.step(stats['validation_average_loss'][-1]) # Plateau scheduler
 
