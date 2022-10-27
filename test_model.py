@@ -2,6 +2,8 @@ from utils import SeqDataset
 import torch, numpy as np
 import os, pickle, argparse, pandas as pd
 from importlib import import_module
+from matplotlib import colors, pyplot as plt
+import seaborn
 
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
@@ -11,6 +13,50 @@ def read_from_pickle(filepath):
   with open(filepath, "rb") as file:
     data = pickle.load(file)
   return data
+
+def evaluate_model(dataloader, loss, model, names, check_ranks):
+  testloss = []
+  
+  with torch.no_grad():
+    model.eval()
+    for x, y in dataloader:
+      x, y = x.to(device), y.to(device)
+      pred = model(x)
+      currloss = loss(pred, y).cpu().detach().numpy().mean(axis=0)
+      testloss.append(currloss)
+
+  testl = np.vstack(testloss).mean(axis=0)
+
+  if check_ranks:
+    ii, motif_names, _ = model.motif_ranks()
+
+  b_i = np.where(names == "B")[0]
+  innate_lym_i = np.where(names == "innate.lym")[0]
+  out_stat = dict()
+
+  for i in range(len(testl)):
+    out_stat[names[i]] = [testl[i]]
+    print(f"Average MSE for {names[i]} = {testl[i]}")
+
+  if check_ranks:
+    pax5_ii = np.where(motif_names[ii[b_i]] == "Pax5+M1848_1.02+I")[1]
+    out_stat["Pax5"] = pax5_ii
+
+    irf4_ii = np.where(motif_names[ii[b_i]] == "Irf4+M1264_1.02+D")[1]
+    out_stat["Irf4"] = irf4_ii
+
+    ebf1_ii = np.where(motif_names[ii[b_i]] == "Ebf1+M3690_1.02+D")[1]
+    out_stat["Ebf1"] = ebf1_ii
+
+    rorc_ii = np.where(motif_names[ii[innate_lym_i]] == "Rorc+M6455_1.02+I")[1]
+    out_stat["Rorc"] = rorc_ii
+
+    print(f"Pax5's rank for B: {pax5_ii[0]}")
+    print(f"Irf4's rank for B: {irf4_ii[0]}")
+    print(f"Ebf1's rank for B: {ebf1_ii[0]}")
+    print(f"Rorc's rank for innate.lym: {rorc_ii[0]}")
+
+  return pd.DataFrame(out_stat)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--meme-file", required=True, help="Path to the meme file that stores PWMs")
@@ -26,6 +72,8 @@ parser.add_argument("--response-num", default=8, type=int, help="number of signa
 parser.add_argument("--stat-out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
 parser.add_argument("--class-name", default="TISFM", help="Model class name.")
+parser.add_argument("--use-validation", action="store_true", help="Use validation split instead of test.")
+parser.add_argument("--plot-path", action="store_true", help="If the path algorithm is run.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -44,72 +92,92 @@ response_dim = args.response_num
 file_stat = args.stat_out
 isaiatac = args.ai_atac
 class_name = args.class_name
+usevalidation = args.use_validation
+plotpath = args.plot_path
 
 architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
 model = architecture(response_dim, meme_file, window_size).to(device)
 
-if os.path.isdir(model_name):
-  if os.path.exists(os.path.join(model_name, "model.best")):
-    file_stat = os.path.join(model_name, "best.tsv")
-    model_name = os.path.join(model_name, f"model.best")
-  else:
-    stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
-    ii = np.argmin(stats["validation_average_loss"])
-    print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
-    file_stat = os.path.join(model_name, "best.tsv")
-    model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
-
-model.load_model(model_name)
+if usevalidation:
+  file_name = "best_validation.tsv"
+else:
+  file_name = "best_test.tsv"
 
 dataset = SeqDataset(signal_file, sequence_file)
 
-test_indices = np.load(os.path.join(split_folder, "test_split.npy"))
-test_dataset = torch.utils.data.Subset(dataset, test_indices)
+if usevalidation:
+  indices = np.load(os.path.join(split_folder, "validation_split.npy"))
+else:
+  indices = np.load(os.path.join(split_folder, "test_split.npy"))
 
-test_dataloader = torch.utils.data.DataLoader(test_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
+dataset_subset = torch.utils.data.Subset(dataset, indices)
+
+dataloader = torch.utils.data.DataLoader(dataset_subset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
 
 loss = torch.nn.MSELoss(reduction="none")
 
-testloss = []
-
 names = dataset.cell_types()
-ii, motif_names = model.motif_ranks()
-b_i = np.where(names == "B")[0]
-innate_lym_i = np.where(names == "innate.lym")[0]
-out_stat = dict()
 
-with torch.no_grad():
-  model.eval()
-  for x, y in test_dataloader:
-    x, y = x.to(device), y.to(device)
-    pred = model(x)
-    currloss = loss(pred, y).cpu().detach().numpy().mean(axis=0)
-    testloss.append(currloss)
+if plotpath:
+  penalty_param_list = read_from_pickle(os.path.join(model_name, "penalty_param_list.pkl"))
+  path_length = len(penalty_param_list)
+  colors = colors.TABLEAU_COLORS
+  annotate_colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:olive', 'tab:cyan']
+  other_color = 'tab:gray'
+  res = []
+  final_layers = []
+  annotate_i = 6
+  for i in range(path_length):
+    model.load_model(os.path.join(model_name, f"path_{i}", "model.best"))
+    final_layers.append(model.linreg.weight.cpu().detach().numpy())
+    res.append(evaluate_model(dataloader, loss, model, names, False))
+    res[-1].index = [f"path_{i}"]
+  _, motif_names, _ = model.motif_ranks() 
+  res = pd.concat(res)
+  to_plot_res = res.melt()
+  res["lambda"] = penalty_param_list
+  res.to_csv(os.path.join(model_name, "path_eval.tsv"), sep = "\t", header=True, index=True)
+  to_plot_res.columns = ["Cell types", "MSE"]
+  to_plot_res["lambda"] = np.tile(penalty_param_list, len(names))
 
-testl = np.vstack(testloss).mean(axis=0)
-for i in range(len(testl)):
-  out_stat[names[i]] = [testl[i]]
-  print(f"Average MSE for {names[i]} = {testl[i]}")
+  fig,ax = plt.subplots(figsize=(16,9))
+  seaborn.lineplot(data=to_plot_res, x="lambda", y="MSE", hue="Cell types", ax=ax)
+  fig.tight_layout()
+  plt.savefig(os.path.join(model_name, "path_mse.png"))
+  plt.close()
 
-if not isaiatac:
-  pax5_ii = np.where(motif_names[ii[b_i]] == "Pax5+M1848_1.02+I")[1]
-  out_stat["Pax5"] = pax5_ii
+  for cell_name_i in range(len(names)):
+    best_ii = np.argmin(res.iloc[:,cell_name_i].to_numpy())
+    final_layer = np.vstack([i[cell_name_i] for i in final_layers])
+    annotate = np.argsort(-np.abs(final_layer[best_ii]))[:9]
+    others = np.argsort(-np.abs(final_layer[best_ii]))[9:]
+    fig,ax = plt.subplots(figsize=(16,9))
+    for n, i in enumerate(others):
+      ax.plot(penalty_param_list, final_layer[:,i], color=colors[other_color])
+    for n, i in enumerate(annotate):
+      ax.plot(penalty_param_list, final_layer[:,i], marker="$%s$" % motif_names[i].split('+')[0], color=colors[annotate_colors[n]], markersize=18)
+    ax.axvline(x=penalty_param_list[best_ii], color='black', linestyle='--')
+    ax.set_title(names[cell_name_i])
+    fig.tight_layout()
+    plt.savefig(os.path.join(model_name, f"path_coef_{names[cell_name_i]}.png"))
+    plt.close()
 
-  irf4_ii = np.where(motif_names[ii[b_i]] == "Irf4+M1264_1.02+D")[1]
-  out_stat["Irf4"] = irf4_ii
+else:
+  if os.path.isdir(model_name):
+    if os.path.exists(os.path.join(model_name, "model.best")):
+      file_stat = os.path.join(model_name, file_name)
+      model_name = os.path.join(model_name, f"model.best")
+    else:
+      stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
+      ii = np.argmin(stats["validation_average_loss"])
+      print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
+      file_stat = os.path.join(model_name, file_name)
+      model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
 
-  ebf1_ii = np.where(motif_names[ii[b_i]] == "Ebf1+M3690_1.02+D")[1]
-  out_stat["Ebf1"] = ebf1_ii
+  model.load_model(model_name)
 
-  rorc_ii = np.where(motif_names[ii[innate_lym_i]] == "Rorc+M6455_1.02+I")[1]
-  out_stat["Rorc"] = rorc_ii
+  out = evaluate_model(dataloader, loss, model, names, not isaiatac)
 
-  print(f"Pax5's rank for B: {pax5_ii[0]}")
-  print(f"Irf4's rank for B: {irf4_ii[0]}")
-  print(f"Ebf1's rank for B: {ebf1_ii[0]}")
-  print(f"Rorc's rank for innate.lym: {rorc_ii[0]}")
-
-out = pd.DataFrame(out_stat)
-#keeping the path, could be useful later
-out.index = [model_name]
-out.to_csv(file_stat, sep="\t")
+  #keeping the path, could be useful later
+  out.index = [model_name]
+  out.to_csv(file_stat, sep="\t")

@@ -112,4 +112,4 @@ class TISFM(Module):
     with torch.no_grad():
       final_layer = self.linreg.weight.cpu().detach().numpy()
     ii = np.argsort(-final_layer, axis=1)
-    return ii, np.array(self.meme_file.motif_names())
+    return ii, np.array(self.meme_file.motif_names()), final_layer
