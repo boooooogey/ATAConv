@@ -5,17 +5,26 @@ import math
 import einops
 
 class SelfAttention(nn.Module):
-  def __init__(self, dim, heads=8):
+  def __init__(self, dim, embedding_dim=None, heads=8):
     super().__init__()
     self.dim, self.heads = dim, heads
 
+    if embedding_dim is None:
+        embedding_dim = math.ceil(dim/heads)
+
     self.innerprod = nn.Parameter(torch.empty(heads, dim, dim))
-    self.tovalue = nn.Parameter(torch.empty(heads, dim, dim))
-    self.unifyheads = nn.Parameter(torch.empty(heads, dim, dim))
+    self.tovalue = nn.Parameter(torch.empty(heads, embedding_dim, dim))
+    self.unifyheads = nn.Parameter(torch.empty(heads, dim, embedding_dim))
+    self.unifyheads_bias = nn.Parameter(torch.empty(1, dim, 1))
+
+    l = math.sqrt(1/dim)
+
     with torch.no_grad():
         nn.init.xavier_uniform_(self.innerprod)
         nn.init.xavier_uniform_(self.tovalue)
         nn.init.xavier_uniform_(self.unifyheads)
+        nn.init.uniform_(self.unifyheads_bias, a=-l, b=l)
+
     self.softmax = nn.Softmax(dim=-1)
 
   def forward(self, x):
@@ -33,35 +42,41 @@ class SelfAttention(nn.Module):
     x = torch.einsum('bhij,bhti->bhtj', weights, x)
 
     # Unify the individual heads
-    x = torch.einsum('bhtl,hct->bcl', x, self.unifyheads)
+    x = torch.einsum('bhtl,hct->bcl', x, self.unifyheads) + self.unifyheads_bias
 
     return x
 
 class SelfAttentionSparse(nn.Module):
-  def __init__(self, dim, embedding_dim=None, heads=8, value_identity=True):
+  def __init__(self, dim, inner_dim=None, embedding_dim=None, heads=8):#, value_identity=True):
     super().__init__()
     self.dim, self.heads = dim, heads
 
     if embedding_dim is None:
-        embedding_dim = dim
+        #embedding_dim = dim
+        embedding_dim = math.ceil(dim/heads)
+    if inner_dim is None:
+        inner_dim = dim
+
     self.embedding_dim = embedding_dim
+    self.inner_dim = inner_dim
 
     self.value_identity = value_identity
 
-    self.tokey = nn.Parameter(torch.empty(heads, embedding_dim, dim))
-    self.toquery = nn.Parameter(torch.empty(heads, embedding_dim, dim))
+    self.tokey = nn.Parameter(torch.empty(heads, inner_dim, dim))
+    self.toquery = nn.Parameter(torch.empty(heads, inner_dim, dim))
+    self.tovalue = nn.Parameter(torch.empty(heads, embedding_dim, dim))
 
-    if not value_identity:
-        self.tovalue = nn.Parameter(torch.empty(heads, dim, dim))
+    self.unifyheads = nn.Parameter(torch.empty(heads, dim, embedding_dim))
+    self.unifyheads_bias = nn.Parameter(torch.empty(1, dim, 1))
 
-    self.unifyheads = nn.Parameter(torch.empty(heads, dim, dim))
+    l = math.sqrt(1/dim)
 
     with torch.no_grad():
         nn.init.xavier_uniform_(self.tokey)
         nn.init.xavier_uniform_(self.toquery)
+        nn.init.xavier_uniform_(self.tovalue)
         nn.init.xavier_uniform_(self.unifyheads)
-        if not value_identity:
-            nn.init.xavier_uniform_(self.tovalue)
+        nn.init.uniform_(self.unifyheads_bias, a=-l, b=l)
 
     self.softmax = nn.Softmax(dim=-1)
 
@@ -77,16 +92,16 @@ class SelfAttentionSparse(nn.Module):
 
     weights = self.softmax(weights)
 
-    if self.value_identity:
-        x = einops.repeat(x, 'b v i -> b h v i', h = h)
-    else:
+    #if self.value_identity:
+    #    x = einops.repeat(x, 'b v i -> b h v i', h = h)
+    #else:
         # Transform input to value
-        x = torch.einsum('bvi,htv->bhti', x, self.tovalue)
+    x = torch.einsum('bvi,htv->bhti', x, self.tovalue)
 
     # Compute the weighted sum of the value
     x = torch.einsum('bhij,bhti->bhtj', weights, x)
 
     # Unify the individual heads
-    x = torch.einsum('bhtl,hct->bcl', x, self.unifyheads)
+    x = torch.einsum('bhtl,hct->bcl', x, self.unifyheads) + self.unifyheads_bias
 
     return x
