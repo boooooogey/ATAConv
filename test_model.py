@@ -14,6 +14,17 @@ def read_from_pickle(filepath):
     data = pickle.load(file)
   return data
 
+def plot_final_layer(model, names, top, path):
+  ii, motif_names, final_layer = model.motif_ranks()
+  top_motifs = ii[:, :top]
+  top_ii = np.sort(np.unique(top_motifs.reshape(-1)))
+  toplot = final_layer[:, top_ii]
+  p = seaborn.clustermap(toplot, cmap="vlag", yticklabels=names, xticklabels=motif_names[top_ii], figsize=(16,9), col_cluster=True, row_cluster=True, dendrogram_ratio=(.1,.3), z_score=1)
+  plt.setp(p.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
+  plt.tight_layout()
+  plt.savefig(path)
+  plt.close()
+
 def evaluate_model(dataloader, loss, model, names, check_ranks):
   testloss = []
   
@@ -73,7 +84,10 @@ parser.add_argument("--stat-out", help="The stats on the given model will be wri
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
 parser.add_argument("--class-name", default="TISFM", help="Model class name.")
 parser.add_argument("--use-validation", action="store_true", help="Use validation split instead of test.")
-parser.add_argument("--plot-path", action="store_true", help="If the path algorithm is run.")
+parser.add_argument("--plot-path", action="store_true", help="If true, plots the results for the path algorithm.")
+parser.add_argument("--plot-final-layer", action="store_true", help="If true, plots the final layer of the network.")
+parser.add_argument("--plot-x-log", action="store_true", help="If true, log normalizes the x axis.")
+parser.add_argument("--top-motifs", default=10, type=int, help="Top motifs for each cell types.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -94,6 +108,9 @@ isaiatac = args.ai_atac
 class_name = args.class_name
 usevalidation = args.use_validation
 plotpath = args.plot_path
+plotxlog = args.plot_x_log
+plotfinallayer = args.plot_final_layer
+topmotifs = args.top_motifs
 
 architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
 model = architecture(response_dim, meme_file, window_size).to(device)
@@ -141,7 +158,9 @@ if plotpath:
   to_plot_res["lambda"] = np.tile(penalty_param_list, len(names))
 
   fig,ax = plt.subplots(figsize=(16,9))
-  seaborn.lineplot(data=to_plot_res, x="lambda", y="MSE", hue="Cell types", ax=ax)
+  lp = seaborn.lineplot(data=to_plot_res, x="lambda", y="MSE", hue="Cell types", ax=ax)
+  if plotxlog:
+    lp.set(xscale='log')
   fig.tight_layout()
   plt.savefig(os.path.join(model_name, "path_mse.png"))
   plt.close()
@@ -152,6 +171,8 @@ if plotpath:
     annotate = np.argsort(-np.abs(final_layer[best_ii]))[:9]
     others = np.argsort(-np.abs(final_layer[best_ii]))[9:]
     fig,ax = plt.subplots(figsize=(16,9))
+    if plotxlog:
+      plt.xscale("log") 
     for n, i in enumerate(others):
       ax.plot(penalty_param_list, final_layer[:,i], color=colors[other_color])
     for n, i in enumerate(annotate):
@@ -181,3 +202,6 @@ else:
   #keeping the path, could be useful later
   out.index = [model_name]
   out.to_csv(file_stat, sep="\t")
+  if plotfinallayer:
+    plot_final_layer(model, names, topmotifs, os.path.join(os.path.dirname(model_name), "final_layer.png"))
+
