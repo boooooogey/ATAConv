@@ -83,7 +83,6 @@ parser.add_argument("--architecture", required=True, help="Architecture to be us
 parser.add_argument("--window-size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--batch-size", default=254, type=int, help="Batch size")
 parser.add_argument("--num-of-workers", default = 8, type=int, help="Number of workers for data loading")
-parser.add_argument("--response-num", default=8, type=int, help="number of signals to predict")
 parser.add_argument("--stat-out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
 parser.add_argument("--class-name", default="TISFM", help="Model class name.")
@@ -106,7 +105,6 @@ architecture_name = args.architecture
 window_size = args.window_size
 batch_size = args.batch_size
 num_of_workers = args.num_of_workers
-response_dim = args.response_num
 file_stat = args.stat_out
 isaiatac = args.ai_atac
 class_name = args.class_name
@@ -116,15 +114,15 @@ plotxlog = args.plot_x_log
 plotfinallayer = args.plot_final_layer
 topmotifs = args.top_motifs
 
+dataset = SeqDataset(signal_file, sequence_file)
+
 architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
-model = architecture(response_dim, meme_file, window_size).to(device)
+model = architecture(dataset.number_of_cell_types(), meme_file, window_size).to(device)
 
 if usevalidation:
   file_name = "best_validation.tsv"
 else:
   file_name = "best_test.tsv"
-
-dataset = SeqDataset(signal_file, sequence_file)
 
 if usevalidation:
   indices = np.load(os.path.join(split_folder, "validation_split.npy"))
