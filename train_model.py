@@ -220,7 +220,7 @@ if learning_rate is None:
         learning_rate = stats['lr'][-1]
     else:
         learning_rate = 0.001
-        stats
+        #stats
 
 if step_learning_rate is None:
   step_learning_rate = learning_rate / 10

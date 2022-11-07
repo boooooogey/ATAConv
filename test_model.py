@@ -36,7 +36,9 @@ def evaluate_model(dataloader, loss, model, names, check_ranks):
       currloss = loss(pred, y).cpu().detach().numpy().mean(axis=0)
       testloss.append(currloss)
 
-  testl = np.vstack(testloss).mean(axis=0)
+  testloss = np.vstack(testloss)
+  testoverall = testloss.mean()
+  testl = testloss.mean(axis=0)
 
   if check_ranks:
     ii, motif_names, _ = model.motif_ranks()
@@ -45,6 +47,8 @@ def evaluate_model(dataloader, loss, model, names, check_ranks):
   innate_lym_i = np.where(names == "innate.lym")[0]
   out_stat = dict()
 
+  out_stat["overall"] = [testoverall]
+  print(f"Overall average MSE = {testoverall}")
   for i in range(len(testl)):
     out_stat[names[i]] = [testl[i]]
     print(f"Average MSE for {names[i]} = {testl[i]}")
