@@ -89,3 +89,6 @@ class SeqDataset(torch.utils.data.Dataset):
 
   def cell_types(self):
     return self.atacsignal.columns.to_numpy()[1:]
+
+  def number_of_cell_types(self):
+    return len(self.atacsignal.columns.to_numpy()[1:])

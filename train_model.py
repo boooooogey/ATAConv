@@ -121,7 +121,6 @@ parser.add_argument("--penalty-type", default="l1", help="l1/mcp regularization"
 parser.add_argument("--model", default=None, help="Start from the given state.")
 parser.add_argument("--lr", default=None, type=float, help="Learning rate")
 parser.add_argument("--step-lr", default=None, type=float, help="For path algorithm.")
-parser.add_argument("--response-num", default=8, type=int, help="number of signals to predict")
 parser.add_argument("--unfreeze-conv", action='store_true', help="Whether to unfreeze the motifs or to keep them frozen (default: false)") 
 parser.add_argument("--class-name", default="TISFM", help="Model class name.")
 parser.add_argument("--save-all", action='store_true', help="Whether to save at the end of every epoch.") 
@@ -151,7 +150,6 @@ penalty_type = args.penalty_type
 model_name = args.model
 learning_rate = args.lr
 step_learning_rate = args.step_lr
-response_dim = args.response_num
 unfreeze = args.unfreeze_conv
 class_name = args.class_name
 params['save_all'] = args.save_all
@@ -171,8 +169,10 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print(f"Device: {device_name}")
 
+dataset = SeqDataset(signal_file, sequence_file)
+
 architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
-model = architecture(response_dim, meme_file, window_size).to(device)
+model = architecture(dataset.number_of_cell_types(), meme_file, window_size).to(device)
 if unfreeze:
   model.unfreeze()
 
@@ -180,8 +180,6 @@ if model_name is None:
     model.init_weights()
 else:
     model.load_model(model_name)
-
-dataset = SeqDataset(signal_file, sequence_file)
 
 train_indices = np.load(os.path.join(split_folder, "train_split.npy"))
 validation_indices = np.load(os.path.join(split_folder, "validation_split.npy"))
