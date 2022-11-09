@@ -29,12 +29,14 @@ class FocalModulation1d(Module):
         for kl in focal_levels:
             self.focal.append(Conv1d(in_channels=dim, out_channels=dim , kernel_size=kl, stride=1, groups=dim, padding=kl//2, bias=False))
 
+        self.mix_depth = Conv1d(in_channels=dim, out_channels=dim, kernel_size=1, stride=1, bias=bias)
+
     def forward(self, x):
         b, c, l = x.shape
 
-        query = einops.einsum(x, self.toquery.weight, "batch channel length, embedding channel -> batch embedding length") + self.toquery.bias.view(1, -1, 1) 
         focus = einops.einsum(x, self.tovalue.weight, "batch channel length, embedding channel -> batch embedding length") + self.tovalue.bias.view(1, -1, 1)
         gates = einops.einsum(x, self.togates.weight, "batch channel length,     gates channel -> batch     gates length") + self.togates.bias.view(1, -1, 1)
+        x = einops.einsum(x, self.toquery.weight, "batch channel length, embedding channel -> batch embedding length") + self.toquery.bias.view(1, -1, 1) 
 
         focus = self.activation(self.focal[0](focus))
         focus_sum = einops.einsum(focus, gates[:, 0, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
@@ -43,6 +45,8 @@ class FocalModulation1d(Module):
             focus_sum = focus_sum + einops.einsum(focus, gates[:, i, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
         global_focus = self.activation(torch.mean(focus, axis=2, keepdim=True))
         focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
+        focus_sum = self.mix_depth(focus_sum)
+        x = x * focus_sum
 
         return einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
 
