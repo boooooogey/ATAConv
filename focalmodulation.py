@@ -6,6 +6,7 @@ from torch.nn import Linear
 from torch.nn import Conv1d
 from torch.nn import ModuleList
 from torch.nn import GELU
+from torch.nn import Sigmoid
 from torch.nn import Module
 
 
@@ -24,6 +25,7 @@ class FocalModulation1d(Module):
         self.outprojection = Linear(in_features=dim, out_features=dim, bias=True)
 
         self.activation = GELU()
+        self.final_activation = Sigmoid()
         self.focal = ModuleList()
 
         for kl in focal_levels:
@@ -46,7 +48,7 @@ class FocalModulation1d(Module):
         global_focus = self.activation(torch.mean(focus, axis=2, keepdim=True))
         focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
         focus_sum = self.mix_depth(focus_sum)
-        x = x * focus_sum
+        x = x * self.final_activation(focus_sum)
 
         return einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
 
