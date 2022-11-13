@@ -1,6 +1,7 @@
 import torch, numpy as np
 
 from torch.nn import Sigmoid
+from torch.nn import Embedding
 from focalpooling import FocalPooling1d
 
 from models.template_model import TemplateModel
