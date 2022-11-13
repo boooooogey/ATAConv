@@ -8,10 +8,11 @@ from torch.nn import ModuleList
 from torch.nn import GELU
 from torch.nn import Softmax
 from torch.nn import Module
+from torch.nn import Dropout
 
 
 class FocalPooling1d(Module):
-    def __init__(self, dim, focal_levels, bias=True):
+    def __init__(self, dim, focal_levels, p=.0, bias=True):
         super().__init__()
         self.dim = dim
         self.focal_levels = np.sort(np.unique(focal_levels))
@@ -27,6 +28,7 @@ class FocalPooling1d(Module):
         self.activation = GELU()
         self.final_activation = Softmax(dim=-1)
         self.focal = ModuleList()
+        self.dropout = Dropout(p=p)
 
         for kl in focal_levels:
             self.focal.append(Conv1d(in_channels=dim, out_channels=dim , kernel_size=kl, stride=1, groups=dim, padding=kl//2, bias=False))

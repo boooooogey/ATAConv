@@ -3,6 +3,7 @@ import torch, numpy as np
 from torch.nn import Sigmoid
 from torch.nn import Embedding
 from focalpooling import FocalPooling1d
+from attention import SelfAttentionSparse
 
 from models.template_model import TemplateModel
 
@@ -14,8 +15,9 @@ class TISFM(TemplateModel):
         self.sigmoid = Sigmoid()
 
         self.position_emb = Embedding(int(np.ceil(window_size/2)), 1)
+        self.attention_layer = SelfAttentionSparse(4, heads=2)
 
-        self.focal_layer = FocalPooling1d(self.out_channels//2, [15 + 4 * i for i in range(3)])
+        self.focal_layer = FocalPooling1d(self.out_channels//2, [15 + 4 * i for i in range(3)], p=0.25)
         self.l = -1
 
     def forward(self, x):
@@ -30,8 +32,9 @@ class TISFM(TemplateModel):
             self.l = l
 
         pos = self.position_emb(self.ii).view(1,1,-1)
+        x = x + self.attention_layer(x + pos)
           
-        x = self.motif_layer(x + pos)
+        x = self.motif_layer(x)
 
         x = self.sigmoid(x)
         x = x.view(x.shape[0], x.shape[1]//2, x.shape[2]*2)
