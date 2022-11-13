@@ -37,17 +37,20 @@ class FocalPooling1d(Module):
     def forward(self, x):
         b, c, l = x.shape
 
-        focus = einops.einsum(x, self.tovalue.weight, "batch channel length, embedding channel -> batch embedding length") + self.tovalue.bias.view(1, -1, 1)
-        gates = einops.einsum(x, self.togates.weight, "batch channel length,     gates channel -> batch     gates length") + self.togates.bias.view(1, -1, 1)
+        focus = einops.einsum(                       x, self.tovalue.weight, "batch channel length, embedding channel -> batch embedding length") + self.tovalue.bias.view(1, -1, 1)
+        gates = einops.einsum(torch.max(x, axis=-1)[0], self.togates.weight, "batch channel       ,     gates channel -> batch gates") + self.togates.bias.view(1, -1)
         #x = einops.einsum(x, self.toquery.weight, "batch channel length, embedding channel -> batch embedding length") + self.toquery.bias.view(1, -1, 1) 
 
         focus = self.activation(self.focal[0](focus))
-        focus_sum = einops.einsum(focus, gates[:, 0, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
+        focus_sum = einops.einsum(focus, gates[:, 0], "batch embedding length, batch -> batch embedding length")
+        #focus_sum = einops.einsum(focus, gates[:, 0, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
         for i, layer in enumerate(self.focal[1:], start=1):
             focus = self.activation(layer(focus))
-            focus_sum = focus_sum + einops.einsum(focus, gates[:, i, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
+            focus_sum = focus_sum + einops.einsum(focus, gates[:, i], "batch embedding length, batch -> batch embedding length")
+            #focus_sum = focus_sum + einops.einsum(focus, gates[:, i, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
         global_focus = self.activation(torch.mean(focus, axis=2, keepdim=True))
-        focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
+        focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num], "batch embedding length, batch -> batch embedding length")
+        #focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
         focus_sum = self.mix_depth(focus_sum)
         x = x * self.final_activation(focus_sum)
 
