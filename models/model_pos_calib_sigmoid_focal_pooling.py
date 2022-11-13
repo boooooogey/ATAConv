@@ -17,7 +17,7 @@ class TISFM(TemplateModel):
         self.position_emb = Embedding(int(np.ceil(window_size/2)), 1)
         self.attention_layer = SelfAttentionSparse(4, heads=2)
 
-        self.focal_layer = FocalPooling1d(self.out_channels//2, [15 + 4 * i for i in range(3)], p=0.25)
+        self.focal_layer = FocalPooling1d(self.out_channels//2, [15 + 4 * i for i in range(3)])
         self.l = -1
 
     def forward(self, x):
