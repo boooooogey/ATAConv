@@ -27,7 +27,7 @@ class TISFM(TemplateModel):
     x = x.view(x.shape[0], x.shape[1]//2, x.shape[2]*2)
 
     #attention on convolution output
-    x = x + self.focal_layer(x)[0]
+    x = x + self.focal_layer(x)[1]
 
     #attention pooling
     x, _ = self.attentionpooling(x)

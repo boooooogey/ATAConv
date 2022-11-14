@@ -7,6 +7,7 @@ from torch.nn import Conv1d
 from torch.nn import ModuleList
 from torch.nn import GELU
 from torch.nn import Sigmoid
+from torch.nn import Softmax
 from torch.nn import Module
 
 
@@ -17,7 +18,7 @@ class FocalModulation1d(Module):
         self.focal_levels = np.sort(np.unique(focal_levels))
         self.level_num = len(focal_levels)
 
-        self.toquery = Linear(in_features=dim, out_features=dim, bias=bias)
+        #self.toquery = Linear(in_features=dim, out_features=dim, bias=bias)
         self.tovalue = Linear(in_features=dim, out_features=dim, bias=bias)
 
         self.togates = Linear(in_features=dim, out_features=self.level_num+1, bias=bias)
@@ -26,6 +27,7 @@ class FocalModulation1d(Module):
 
         self.activation = GELU()
         self.final_activation = Sigmoid()
+        self.mask_activation = Softmax(dim=-1)
         self.focal = ModuleList()
 
         for kl in focal_levels:
@@ -48,7 +50,8 @@ class FocalModulation1d(Module):
         global_focus = self.activation(torch.mean(focus, axis=2, keepdim=True))
         focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num, :].view(b,l), "batch embedding length, batch length -> batch embedding length")
         focus_sum = self.mix_depth(focus_sum)
-        x = x * self.final_activation(focus_sum)
+        mask = self.mask_activation(focus_sum)
+        x = self.final_activation(x) * mask
 
-        return einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
+        return x, mask#einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
 
