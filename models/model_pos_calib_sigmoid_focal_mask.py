@@ -13,7 +13,7 @@ class TISFM(TemplateModel):
 
     self.sigmoid = Sigmoid()
 
-    self.focal_layer = FocalModulation1d(self.out_channels//2, [15 + 2 * i for i in range(6)])
+    self.focal_layer = FocalModulation1d(self.out_channels//2, [15 + 4 * i for i in range(3)])
 
     self.attentionpooling = AttentionPooling1D(self.conv_length * 2, self.out_channels//2, mode = "diagonal")
 

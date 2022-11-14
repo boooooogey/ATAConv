@@ -18,7 +18,7 @@ class FocalModulation1d(Module):
         self.focal_levels = np.sort(np.unique(focal_levels))
         self.level_num = len(focal_levels)
 
-        #self.toquery = Linear(in_features=dim, out_features=dim, bias=bias)
+        self.toquery = Linear(in_features=dim, out_features=dim, bias=bias)
         self.tovalue = Linear(in_features=dim, out_features=dim, bias=bias)
 
         self.togates = Linear(in_features=dim, out_features=self.level_num+1, bias=bias)
