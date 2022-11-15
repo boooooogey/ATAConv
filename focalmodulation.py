@@ -64,7 +64,7 @@ class FocalModulationviaPooling1d(Module):
         self.focal_levels = np.sort(np.unique(focal_levels))
         self.level_num = len(focal_levels)
 
-        self.togates = Linear(in_features=dim, out_features=self.level_num+1, bias=bias)
+        self.togates = Linear(in_features=dim, out_features=self.level_num+2, bias=bias)
 
         self.activation = GELU()
         self.mask_activation = Softmax(dim=-1)
@@ -82,11 +82,11 @@ class FocalModulationviaPooling1d(Module):
         gates = einops.einsum(torch.max(x, axis=-1)[0], self.togates.weight, "batch channel, gates channel -> batch gates") + self.togates.bias.view(1, -1)
         gates = self.mask_activation(gates)
 
-        focus_sum = einops.einsum(self.focal[0](x)[0], gates[:, 0], "batch embedding length, batch -> batch embedding length")
-        for i, layer in enumerate(self.focal[1:], start=1):
-            focus_sum = focus_sum + einops.einsum(layer(x)[0], gates[:, i], "batch embedding length, batch -> batch embedding length")
+        focus_sum = einops.einsum(x, gates[:, 0], "batch embedding length, batch -> batch embedding length")
+        for i, layer in enumerate(self.focal):
+            focus_sum = focus_sum + einops.einsum(layer(x)[0], gates[:, i+1], "batch embedding length, batch -> batch embedding length")
         global_focus = torch.mean(x, axis=2, keepdim=True)
-        focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num], "batch embedding length, batch -> batch embedding length")
+        focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num+1], "batch embedding length, batch -> batch embedding length")
 
         focus_sum = self.mix_depth(focus_sum)
 
