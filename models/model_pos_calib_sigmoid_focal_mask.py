@@ -2,7 +2,8 @@ import torch, numpy as np
 
 from torch.nn import Sigmoid
 from attentionpooling import AttentionPooling1D
-from focalmodulation import FocalModulation1d
+from focalmodulation import FocalModulationMask1d
+from torch.nn import Embedding
 
 from models.template_model import TemplateModel
 
@@ -13,7 +14,8 @@ class TISFM(TemplateModel):
 
     self.sigmoid = Sigmoid()
 
-    self.focal_layer = FocalModulation1d(self.out_channels//2, [15 + 4 * i for i in range(3)])
+    self.position_emb = Embedding(int(np.ceil(window_size/2)), 1)
+    self.focal_layer = FocalModulationMask1d(self.out_channels//2, [15 + 4 * i for i in range(3)], self.conv_length*2)
 
     self.attentionpooling = AttentionPooling1D(self.conv_length * 2, self.out_channels//2, mode = "diagonal")
 
@@ -21,19 +23,31 @@ class TISFM(TemplateModel):
 
   def forward(self, x):
 
-    x = self.motif_layer(x)
+    l = x.shape[2]
+
+    if self.l != l:
+        if x.get_device() == -1:
+            ii_f = torch.arange(l//2, device = torch.device("cpu"))
+            ii_r = torch.flip(torch.arange(l - l//2, device = torch.device("cpu")), dims=[0])
+        else:
+            ii_f = torch.arange(l//2, device = x.get_device())
+            ii_r = torch.flip(torch.arange(l - l//2, device = x.get_device()),dims=[0])
+        self.ii = torch.cat([ii_f, ii_r])
+        self.l = l
+
+    pos = self.position_emb(self.ii).view(1,1,-1)
+
+    x = self.motif_layer(x+pos)
 
     x = self.sigmoid(x)
     x = x.view(x.shape[0], x.shape[1]//2, x.shape[2]*2)
-
-    #attention on convolution output
-    x = x + self.focal_layer(x)[1]
+    mask = self.focal_layer(x)
 
     #attention pooling
     x, _ = self.attentionpooling(x)
     x = x.view(x.shape[0], x.shape[1])
 
     #regression
-    y = self.linreg(x)
+    y = self.linreg(x * mask)
 
     return y

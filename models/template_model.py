@@ -29,10 +29,10 @@ class TemplateModel(Module):
     self.out_channels, self.in_channels, self.kernel_size = kernels.shape
 
     #First layer convolution. Weights set to motifs and are fixed.
-    self.conv_motif = Conv1d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=self.kernel_size, stride=stride, padding="same", bias=False)#
+    self.conv_motif = Conv1d(in_channels=self.in_channels, out_channels=self.out_channels, kernel_size=self.kernel_size, stride=stride, bias=False)#, padding="same"
     self.conv_motif.weight = torch.nn.Parameter(kernels)
     self.conv_motif.weight.requires_grad = False
-    self.conv_length = window_size #int((window_size - self.kernel_size) / stride) + 1
+    self.conv_length = int((window_size - self.kernel_size) / stride) + 1
 
     self.conv_bias = Parameter(torch.empty(1, self.out_channels, 1, requires_grad = True))
     self.conv_scale  = Parameter(torch.empty(self.out_channels, requires_grad = True))
