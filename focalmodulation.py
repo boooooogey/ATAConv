@@ -111,7 +111,8 @@ class FocalModulationMask1d(Module):
         for kl in focal_levels:
             self.focal.append(Conv1d(in_channels=dim, out_channels=dim , kernel_size=kl, stride=1, groups=dim, padding=kl//2, bias=False))
 
-        self.mix_depth = Conv1d(in_channels=dim, out_channels=dim, kernel_size=kernel_length, stride=1, bias=bias)
+        self.mix_depth = Conv1d(in_channels=dim, out_channels=dim, kernel_size=1, stride=1, bias=bias)
+        self.final_pooling = AttentionPooling1D(kernel_size=kernel_length, feature_size=dim)
 
     def forward(self, x):
         b, c, l = x.shape
@@ -128,7 +129,7 @@ class FocalModulationMask1d(Module):
         global_focus = self.activation(torch.mean(focus, axis=2, keepdim=True))
         focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num], "batch embedding length, batch -> batch embedding length")
 
-        focus_sum = self.mix_depth(focus_sum).view(b,c)
+        focus_sum = self.final_pooling(self.mix_depth(focus_sum))[0].view(b,c)
 
         return self.final_activation(focus_sum)#einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
 
