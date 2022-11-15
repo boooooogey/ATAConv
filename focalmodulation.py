@@ -10,6 +10,8 @@ from torch.nn import Sigmoid
 from torch.nn import Softmax
 from torch.nn import Module
 
+from attentionpooling import AttentionPooling1D
+
 
 class FocalModulation1d(Module):
     def __init__(self, dim, focal_levels, bias=True):
@@ -54,4 +56,39 @@ class FocalModulation1d(Module):
         x = self.final_activation(x) * mask
 
         return x, mask#einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
+
+class FocalModulationviaPooling1d(Module):
+    def __init__(self, dim, focal_levels, bias=True):
+        super().__init__()
+        self.dim = dim
+        self.focal_levels = np.sort(np.unique(focal_levels))
+        self.level_num = len(focal_levels)
+
+        self.togates = Linear(in_features=dim, out_features=self.level_num+1, bias=bias)
+
+        self.activation = GELU()
+        self.mask_activation = Softmax(dim=-1)
+        self.channel_mask = Softmax(dim=-2)
+        self.focal = ModuleList()
+
+        for kl in focal_levels:
+            self.focal.append(AttentionPooling1D(kernel_size=kl, feature_size=dim, keep_shape=True))
+
+        self.mix_depth = Conv1d(in_channels=dim, out_channels=dim, kernel_size=1, stride=1, bias=bias)
+
+    def forward(self, x):
+        b, c, l = x.shape
+
+        gates = einops.einsum(torch.max(x, axis=-1)[0], self.togates.weight, "batch channel, gates channel -> batch gates") + self.togates.bias.view(1, -1)
+        gates = self.mask_activation(gates)
+
+        focus_sum = einops.einsum(self.focal[0](x)[0], gates[:, 0], "batch embedding length, batch -> batch embedding length")
+        for i, layer in enumerate(self.focal[1:], start=1):
+            focus_sum = focus_sum + einops.einsum(layer(x)[0], gates[:, i], "batch embedding length, batch -> batch embedding length")
+        global_focus = torch.mean(x, axis=2, keepdim=True)
+        focus_sum = focus_sum + einops.einsum(global_focus, gates[:, self.level_num], "batch embedding length, batch -> batch embedding length")
+
+        focus_sum = self.mix_depth(focus_sum)
+
+        return self.channel_mask(focus_sum) #einops.einsum(x, self.outprojection.weight, "batch embedding length, channel embedding -> batch channel length") + self.outprojection.bias.view(1, -1, 1)
 
