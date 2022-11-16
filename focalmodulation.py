@@ -99,7 +99,7 @@ class FocalModulationMask1d(Module):
         self.level_num = len(focal_levels)
         self.kernel_length = kernel_length
 
-        self.tovalue = Linear(in_features=dim, out_features=dim, bias=bias)
+        #self.tovalue = Linear(in_features=dim, out_features=dim, bias=bias)
         self.togates = Linear(in_features=dim, out_features=self.level_num+2, bias=bias)
         self.outprojection = Linear(in_features=dim, out_features=dim, bias=True)
 
