@@ -10,6 +10,22 @@ def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
     pickle.dump(data, file)
 
+def freeze_all_except_final(model):
+    model.freeze(doall=True)
+    model.unfreeze(layers=['linreg'])
+    return model
+
+def model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_except_final):
+    if unfreeze_conv:
+        model.unfreeze()
+    elif unfreeze_all:
+        model.unfreeze(doall=True)
+    elif freeze_all_except_final:
+        model = freeze_all_except_final(model)
+    else:
+        pass
+    return model
+
 def train_model(model, model_i, number_of_epochs, 
                 train_dataloader, validation_dataloader, test_dataloader, 
                 loss, optimizer, scheduler, 
@@ -127,6 +143,8 @@ parser.add_argument("--save-all", action='store_true', help="Whether to save at 
 parser.add_argument("--early-stopping", action='store_true', help="Whether to stop training early if validation MSE does not improve.") 
 parser.add_argument("--early-stopping-threshold", default=1e-7, type=float, help="If early stopping is set, the learning rate is checked to decide whether to stop training.") 
 parser.add_argument("--penalize-layers", default=['linreg'], type=str, help="on which layers, the penalty should be imposed.") 
+parser.add_argument("--freeze-all-except-final-layer", action='store_true', help="If set, all the layers are frozen except for the final layer.") 
+parser.add_argument("--unfreeze-all", action='store_true', help="Unfreeze all layers.") 
 
 args = parser.parse_args()
 
@@ -150,12 +168,14 @@ penalty_type = args.penalty_type
 model_name = args.model
 learning_rate = args.lr
 step_learning_rate = args.step_lr
-unfreeze = args.unfreeze_conv
+unfreeze_conv = args.unfreeze_conv
 class_name = args.class_name
 params['save_all'] = args.save_all
 params['early_stopping'] = args.early_stopping
 params['es_threshold'] = args.early_stopping_threshold
 penalize_layers = args.penalize_layers
+freeze_all_except_final = args.freeze_all_except_final_layer
+unfreeze_all = args.unfreeze_all
 
 if model_name is None or model_name.endswith("model.best"):
     model_i = -1
@@ -173,13 +193,13 @@ dataset = SeqDataset(signal_file, sequence_file)
 
 architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
 model = architecture(dataset.number_of_cell_types(), meme_file, window_size).to(device)
-if unfreeze:
-  model.unfreeze()
 
 if model_name is None:
     model.init_weights()
 else:
     model.load_model(model_name)
+
+model = model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_except_final)
 
 train_indices = np.load(os.path.join(split_folder, "train_split.npy"))
 validation_indices = np.load(os.path.join(split_folder, "validation_split.npy"))
@@ -243,6 +263,7 @@ if len(penalty_param) != 1 or penalty_param_range is not None:
   save_to_pickle(penalty_param_list, os.path.join(model_output, "penalty_param_list.pkl"))
   for i, penalty_param in enumerate(penalty_param_list):
     print(f"Step {i}: penalty parameter = {penalty_param:.5f}")
+    model = model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_except_final)
     params['model'] = model
     params['stats'] = empty_stats()
     path_dir = os.path.join(model_output, f"path_{i}")
@@ -258,6 +279,7 @@ if len(penalty_param) != 1 or penalty_param_range is not None:
     train_model(**params)
     model.load_model(os.path.join(path_dir, "model.best"))
 else:
+  model = model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_except_final)
   penalty_param = penalty_param[0]
   optimizer = return_optimizer(model, penalty_param, penalty_type, learning_rate, penalize_layers)
 

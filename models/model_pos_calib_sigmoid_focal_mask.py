@@ -46,8 +46,9 @@ class TISFM(TemplateModel):
     #attention pooling
     x, _ = self.attentionpooling(x)
     x = x.view(x.shape[0], x.shape[1])
+    x = x + x * mask
 
     #regression
-    y = self.linreg(x * mask)
+    y = self.linreg(x)
 
     return y
