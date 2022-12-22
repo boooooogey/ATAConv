@@ -36,8 +36,8 @@ class TISFM(TemplateModel):
     l = x.shape[2]
 
     if self.l != l:
-        ii_f = torch.arange(l//2) device = x.get_device())
-        ii_r = torch.flip(torch.arange(l - l//2), dims=[0], device = x.get_device())
+        ii_f = torch.arange(l//2, device = x.get_device())
+        ii_r = torch.flip(torch.arange(l - l//2, device = x.get_device()), dims=[0])
 
         self.ii = torch.cat([ii_f, ii_r])
         self.l = l
