@@ -11,7 +11,7 @@ from torch.nn.functional import pad
 
 class TemplateModel(Module):
     def __init__(self, num_of_response, motif_path, window_size, 
-                 stride, pad_motif):
+                 stride, pad_motif, reg_dim_expansion=1):
         super(TemplateModel, self).__init__()
 
         #keep y dimension
@@ -40,8 +40,7 @@ class TemplateModel(Module):
             torch.nn.init.ones_(self.conv_scale)
             torch.nn.init.zeros_(self.conv_bias)
 
-        #Final regression layer.
-        self.linreg = Linear(in_features=int(self.out_channels/2), out_features=num_of_response)
+        self.linreg = Linear(in_features=int(reg_dim_expansion*self.out_channels/2), out_features=num_of_response)
 
 
     def init_weights(self):
