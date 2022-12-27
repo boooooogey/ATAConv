@@ -65,6 +65,9 @@ def train_model(model, model_i, number_of_epochs,
         if np.argmin(stats['validation_average_loss']) == (len(stats['validation_average_loss'])-1):
           print("Validation MSE improved. Saving the model.")
           model.save_model(os.path.join(model_output, "model.best"))
+        if np.argmin(stats['train_average_loss']) == (len(stats['train_average_loss'])-1):
+          print("Training MSE improved. Saving the model.")
+          model.save_model(os.path.join(model_output, "model.train.best"))
 
       save_to_pickle(stats, os.path.join(model_output, f"stats.pkl"))
 
