@@ -10,7 +10,7 @@ def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
     pickle.dump(data, file)
 
-def freeze_all_except_final(model):
+def freeze_all_except_final_func(model):
     model.freeze(doall=True)
     model.unfreeze(layers=['linreg'])
     return model
@@ -21,7 +21,7 @@ def model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_
     elif unfreeze_all:
         model.unfreeze(doall=True)
     elif freeze_all_except_final:
-        model = freeze_all_except_final(model)
+        model = freeze_all_except_final_func(model)
     else:
         pass
     return model
