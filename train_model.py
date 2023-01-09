@@ -94,14 +94,14 @@ def train_model(model, model_i, number_of_epochs,
 def return_optimizer(model, penalty_param, penalty_type, learning_rate, targets):
   if penalty_param != 0:
     if penalty_type == "l1":
-      optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x in targets, model.named_parameters())],
+      optimizer = AdamL1([{'params': [i[1] for i in filter(lambda x: not x[0] in targets, model.named_parameters())],
                            'penalty_hyper_param': 0},
-                          {'params': [i[1] for i in filter(lambda x: x in targets, model.named_parameters())],
+                          {'params': [i[1] for i in filter(lambda x: x[0] in targets, model.named_parameters())],
                            'penalty_hyper_param': penalty_param}], lr=learning_rate)
     elif penalty_type == "mcp":
-      optimizer = AdamMCP([{'params': [i[1] for i in filter(lambda x: not x in targets, model.named_parameters())],
+      optimizer = AdamMCP([{'params': [i[1] for i in filter(lambda x: not x[0] in targets, model.named_parameters())],
                             'penalty_hyper_param': 0},
-                           {'params': [i[1] for i in filter(lambda x: x in targets, model.named_parameters())],
+                           {'params': [i[1] for i in filter(lambda x: x[0] in targets, model.named_parameters())],
                             'penalty_hyper_param': penalty_param,
                             'b': 3}], lr=learning_rate)
     else:
@@ -145,7 +145,7 @@ parser.add_argument("--class-name", default="TISFM", help="Model class name.")
 parser.add_argument("--save-all", action='store_true', help="Whether to save at the end of every epoch.") 
 parser.add_argument("--early-stopping", action='store_true', help="Whether to stop training early if validation MSE does not improve.") 
 parser.add_argument("--early-stopping-threshold", default=1e-7, type=float, help="If early stopping is set, the learning rate is checked to decide whether to stop training.") 
-parser.add_argument("--penalize-layers", default=['linreg'], type=str, help="on which layers, the penalty should be imposed.") 
+parser.add_argument("--penalize-layers", default=['linreg.weight'], type=str, help="on which layers, the penalty should be imposed.") 
 parser.add_argument("--freeze-all-except-final-layer", action='store_true', help="If set, all the layers are frozen except for the final layer.") 
 parser.add_argument("--unfreeze-all", action='store_true', help="Unfreeze all layers.") 
 
