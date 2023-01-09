@@ -254,10 +254,10 @@ if len(penalty_param) != 1 or penalty_param_range is not None:
     end = penalty_param_range[1]
     num = penalty_param_range[2]
     if log_penalty_param_range:
-      #penalty_param_list = np.sort(np.unique(np.concatenate([[0],np.exp(np.linspace(start=np.log(start), stop=np.log(end), num=int(num)))])))
-      penalty_param_list = np.sort(np.unique(np.exp(np.linspace(start=np.log(start), stop=np.log(end), num=int(num)))))
+      penalty_param_list = np.sort(np.unique(np.concatenate([[0],np.exp(np.linspace(start=np.log(start), stop=np.log(end), num=int(num)))])))
+      #penalty_param_list = np.sort(np.unique(np.exp(np.linspace(start=np.log(start), stop=np.log(end), num=int(num)))))
     else:
-      penalty_param_list = np.sort(np.unique(np.linspace(start=start, stop=end, num=int(num))))
+      penalty_param_list = np.sort(np.unique(np.concatenate([[0],np.linspace(start=start, stop=end, num=int(num))])))
   else:
     penalty_param_list = np.sort(np.unique((np.array(penalty_param))))
   print(penalty_param_list)
