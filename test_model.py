@@ -5,6 +5,10 @@ from importlib import import_module
 from matplotlib import colors, pyplot as plt
 import seaborn
 
+####DELETE##################
+from IPython import embed###
+############################
+
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
     pickle.dump(data, file)
@@ -157,7 +161,8 @@ if plotpath:
   res["lambda"] = penalty_param_list
   res.to_csv(os.path.join(model_name, "path_eval.tsv"), sep = "\t", header=True, index=True)
   to_plot_res.columns = ["Cell types", "MSE"]
-  to_plot_res["lambda"] = np.tile(penalty_param_list, len(names))
+  embed()
+  to_plot_res["lambda"] = np.tile(penalty_param_list, len(names)+1)
 
   fig,ax = plt.subplots(figsize=(16,9))
   lp = seaborn.lineplot(data=to_plot_res, x="lambda", y="MSE", hue="Cell types", ax=ax)
