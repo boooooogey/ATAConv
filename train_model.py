@@ -265,6 +265,7 @@ if len(penalty_param) != 1 or penalty_param_range is not None:
   params['save_all'] = False
 
   save_to_pickle(penalty_param_list, os.path.join(model_output, "penalty_param_list.pkl"))
+  continue_i = np.array([int(i.split("_")[1]) if i.startswith("path") else -1 for i in os.listdir(model_output)]).max()
   for i, penalty_param in enumerate(penalty_param_list):
     print(f"Step {i}: penalty parameter = {penalty_param:.5f}")
     model = model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_except_final)
@@ -280,7 +281,12 @@ if len(penalty_param) != 1 or penalty_param_range is not None:
     params['scheduler'] = ReduceLROnPlateau(optimizer)
     params['optimizer'] = optimizer
    
-    train_model(**params)
+    if continue_i > i:
+        print("Skipping")
+        model.load_model(os.path.join(path_dir, "model.best"))
+    else:
+        train_model(**params)
+
     model.load_model(os.path.join(path_dir, "model.best"))
 else:
   model = model_freeze_unfreeze_layers(model, unfreeze_conv, unfreeze_all, freeze_all_except_final)

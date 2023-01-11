@@ -95,6 +95,7 @@ parser.add_argument("--plot-path", action="store_true", help="If true, plots the
 parser.add_argument("--plot-final-layer", action="store_true", help="If true, plots the final layer of the network.")
 parser.add_argument("--plot-x-log", action="store_true", help="If true, log normalizes the x axis.")
 parser.add_argument("--top-motifs", default=10, type=int, help="Top motifs for each cell types.")
+parser.add_argument("--model-index", default=None, help="Model name to use when saving.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -117,6 +118,7 @@ plotpath = args.plot_path
 plotxlog = args.plot_x_log
 plotfinallayer = args.plot_final_layer
 topmotifs = args.top_motifs
+model_index = args.model_index
 
 dataset = SeqDataset(signal_file, sequence_file)
 
@@ -161,7 +163,6 @@ if plotpath:
   res["lambda"] = penalty_param_list
   res.to_csv(os.path.join(model_name, "path_eval.tsv"), sep = "\t", header=True, index=True)
   to_plot_res.columns = ["Cell types", "MSE"]
-  embed()
   to_plot_res["lambda"] = np.tile(penalty_param_list, len(names)+1)
 
   fig,ax = plt.subplots(figsize=(16,9))
@@ -193,13 +194,13 @@ if plotpath:
 else:
   if os.path.isdir(model_name):
     if os.path.exists(os.path.join(model_name, "model.best")):
-      file_stat = os.path.join(model_name, file_name)
+      #file_stat = os.path.join(model_name, file_name)
       model_name = os.path.join(model_name, f"model.best")
     else:
       stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
       ii = np.argmin(stats["validation_average_loss"])
       print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
-      file_stat = os.path.join(model_name, file_name)
+      #file_stat = os.path.join(model_name, file_name)
       model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
 
   model.load_model(model_name)
@@ -207,8 +208,15 @@ else:
   out = evaluate_model(dataloader, loss, model, names, not isaiatac)
 
   #keeping the path, could be useful later
-  out.index = [model_name]
-  out.to_csv(file_stat, sep="\t")
+  if model_index is not None:
+    out.index = [model_index]
+  else:
+    out.index = [model_name]
+  if os.path.exists(file_stat):
+    stat = pd.read_csv(file_stat, sep="\t", header=0, index_col=0)
+    pd.concat([stat, out]).to_csv(file_stat, sep="\t", header=True, index=True)
+  else:
+    out.to_csv(file_stat, sep="\t")
   if plotfinallayer:
     plot_final_layer(model, names, topmotifs, os.path.join(os.path.dirname(model_name), "final_layer.png"))
 
