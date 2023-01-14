@@ -23,7 +23,7 @@ def plot_final_layer(model, names, top, path):
   top_motifs = ii[:, :top]
   top_ii = np.sort(np.unique(top_motifs.reshape(-1)))
   toplot = final_layer[:, top_ii]
-  p = seaborn.clustermap(toplot, cmap="vlag", yticklabels=names, xticklabels=motif_names[top_ii], figsize=(16,9), col_cluster=True, row_cluster=True, dendrogram_ratio=(.1,.3), z_score=1)
+  p = seaborn.clustermap(toplot, cmap="vlag", yticklabels=names, xticklabels=[i.split("+")[0] for i in motif_names[top_ii]], figsize=(16,9), col_cluster=True, row_cluster=True, dendrogram_ratio=(.1,.3), z_score=1)
   plt.setp(p.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
   plt.tight_layout()
   plt.savefig(path)
@@ -77,6 +77,17 @@ def evaluate_model(dataloader, loss, model, names, check_ranks):
 
   return pd.DataFrame(out_stat)
 
+def extract_and_write_final_layer(model, names, motif_names, model_name, file_name_template):
+    with torch.no_grad():
+        layer = model.linreg.weight.detach().cpu().numpy()
+    for i, n in enumerate(names):
+        file_name = f"{file_name_template}.{n}"
+        out = pd.DataFrame({"motifs": motif_names, model_name: layer[i, :len(motif_names)]}).set_index("motifs")
+        if os.path.exists(file_name):
+            data = pd.read_csv(file_name, sep="\t", header=0, index_col=0)
+            out = pd.concat([data, out], axis = 1)
+        out.to_csv(file_name, sep="\t", header=True, index=True)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--meme-file", required=True, help="Path to the meme file that stores PWMs")
 parser.add_argument("--atac-file", required=True, help="Path to the file that stores ATAC signal")
@@ -96,6 +107,7 @@ parser.add_argument("--plot-final-layer", action="store_true", help="If true, pl
 parser.add_argument("--plot-x-log", action="store_true", help="If true, log normalizes the x axis.")
 parser.add_argument("--top-motifs", default=10, type=int, help="Top motifs for each cell types.")
 parser.add_argument("--model-index", default=None, help="Model name to use when saving.")
+parser.add_argument("--extract-final-layer", default=None, help="Extract and save the final layer.")
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -119,6 +131,7 @@ plotxlog = args.plot_x_log
 plotfinallayer = args.plot_final_layer
 topmotifs = args.top_motifs
 model_index = args.model_index
+extract_final_layer = args.extract_final_layer
 
 dataset = SeqDataset(signal_file, sequence_file)
 
@@ -194,13 +207,13 @@ if plotpath:
 else:
   if os.path.isdir(model_name):
     if os.path.exists(os.path.join(model_name, "model.best")):
-      #file_stat = os.path.join(model_name, file_name)
+      file_stat = os.path.join(model_name, file_name)
       model_name = os.path.join(model_name, f"model.best")
     else:
       stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
       ii = np.argmin(stats["validation_average_loss"])
       print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
-      #file_stat = os.path.join(model_name, file_name)
+      file_stat = os.path.join(model_name, file_name)
       model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
 
   model.load_model(model_name)
@@ -218,5 +231,11 @@ else:
   else:
     out.to_csv(file_stat, sep="\t")
   if plotfinallayer:
+    print("hello")
+    print(os.path.join(os.path.dirname(model_name), "final_layer.png"))
     plot_final_layer(model, names, topmotifs, os.path.join(os.path.dirname(model_name), "final_layer.png"))
 
+if extract_final_layer is not None:
+  print(f"Extracting final layer to {extract_final_layer}")
+  motif_names = np.array(model.meme_file.motif_names())
+  extract_and_write_final_layer(model, names, motif_names, model_index, extract_final_layer)

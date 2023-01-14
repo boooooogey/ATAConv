@@ -6,7 +6,7 @@ from torch.nn import Linear
 from torch.nn import Sigmoid
 from torch.nn import Embedding
 from torch.nn import Parameter
-from torch.nn import MaxPooling1D
+from torch.nn import MaxPool1d
 from attention import SelfAttention
 from attention import SelfAttentionSparse
 from attentionpooling import AttentionPooling1D
@@ -27,7 +27,7 @@ class TISFM(TemplateModel):
     self.attention_layer = SelfAttentionSparse(4, heads=2)
 
     self.attentionpooling = AttentionPooling1D(self.conv_length * 2, self.out_channels//2, mode = "diagonal")
-    self.pooling = MaxPooling1D(self.conv_length*2)
+    self.pooling = MaxPool1d(self.conv_length*2)
 
     self.interaction_layer = Linear(in_features=self.out_channels//2, out_features=self.out_channels//2, bias=True)
 
