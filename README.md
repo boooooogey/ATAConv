@@ -1,6 +1,14 @@
 # Description
 The GitHub repository for totally interpretable sequence to function model (tiSFM), [publication](https://www.biorxiv.org/content/10.1101/2023.01.25.525572v1). tiSFM leverages prior information conveyed by the positive weight matrices (PWMs) of the known motifs via integrating PWMs as kernels to a convolutional layer. The model consists of popular, succesful techniques such as attention, convolution, positional embedding, and programmable pooling (a restricted version of an attention pooling). We have shown that the model's parameters correlates highly with the biological insight. Additionally, we compared tiSFM to AI-ATAC (current state of the art sequence to function model) and showed that tiSFM overperforms AI-ATAC.
 
+The model architecture:
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/15932827/215568629-ccea3edc-556c-43b9-a5e3-6307f844c12c.png">
+</p>
+
+Comparison with AI-ATAC:
+
 ![dark](https://user-images.githubusercontent.com/15932827/215548907-96246423-6aa6-4849-b42c-ad3502ba7bd0.png#gh-dark-mode-only)
 ![light](https://user-images.githubusercontent.com/15932827/215548553-7836e6bb-bcf9-4426-aa06-692b548dcfdd.png#gh-light-mode-only)
 
@@ -52,7 +60,42 @@ ImmGenATAC1219.peak_3   GGAGAATGAGATGTCCCTGGAGAAATTGTTTTCTTAGCCAGTGGCTGCCAGTTTTA
 ImmGenATAC1219.peak_4   atttaaagcTAGCTTAGACTTTATAACAAAAGCCCACTCACAAGACAAGACCAGGATCCTGGAGAGATAGTTCAGGAAGCACAGACTCTTGCTATGGGCTTATAAGTCTCCATGTCTGCATCTCCAGGGAAAAGCTGAGAGTCAGCATGAATCCAGAGATAGAAAAAGTGGCAGGACTTTCTGGCTGCCAGCCCAGAATCAAGTTGAATGAGAGAAACTTCCTCAAAGGAATAAGGCAGAGAATGATGTTCCGGCTTCCATGTGTTCCTGGGCCTGTAGTCTCTCAAACACATCtgttgt
 ImmGenATAC1219.peak_5   GTATACTCTTTTAGAAGCTACTTTTGGACCTACCCTCTGCCCTTCCTTTTTTTCCAAGACATCAGCAGGCTGGTTGAGAGCGTTAATGGTCCCAACCAATGAGGAACTAGCTGTGAGGAGAGCAGTCAAGTGTGTCCTGAAGTTCAGATGGCTTTCTGCAACCAGATACTTGCCAGACATGAGCAGTAAACACAGTTCCATCAGTCCAGTTCCACACAAAGACTGAGAGCATGATTCAGCCCTCTGTCTGCTTCATTTGCCTTACAGTTCACTTGGTTGATCATTACCTTGAATGTCATT
 ```
-  
+* ``--batch-size``
+
+  Specify the batch size for the training. 
+* ``--model-output``
+
+  Specify the path to save the model parameters.
+* ``--split-folder``
+
+  A directory that contains three files: ``train_split.npy``, ``validation_split.npy``, ``test_split.npy``, each a Numpy integer array that contain row indices for the data set.
+* ``--number-of-epochs``
+
+  Specify how many times the training goes over a single sample in the training split. 
+* ``--lr``
+
+  Initial learning rate. The learning rate decays if the MSE on the validation split does not improve for 10 epochs.
+* ``--early-stopping``
+
+  Set to enable early stopping. The training stops before all the epochs are iterated if the learning rate decays below a threshold.
+* ``--early-stopping-threshold``
+
+  Set the learning rate threshold for early stopping.
+* ``--penalty-type``
+
+  Specify through which proximal operator to enfore sparsity on the model's parameters. The options are ``mcp`` and ``l1``.
+* ``--penalty-param``
+
+  The hyperparameter for ``l1`` and ``mcp``. In the case of ``mcp``, this is the first hyperparameter.
+* ``--mcp-param``
+
+  The second hyperparameter for ``mcp`` proximal operator.
+* ``--penalty-param-range``
+
+  Three values for ``start``, ``end``, and ``step`` for the hyperparameter range of the path algorithm.
+* ``--architecture``
+
+  The architecture to be used. When ``--architecture mode_name`` is given, the script looks ``model/mode_name.py`` to import the model architecture from. Usually the models in ``model`` directory inherit the template model (``TemplateModel``) in ``template_model.py`` which includes the convolutional layer with PWM and a final layer that predicts the target signals.
 
 ## Clone this repo
 
