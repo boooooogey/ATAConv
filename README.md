@@ -106,5 +106,5 @@ git clone https://github.com/boooooogey/ATAConv.git
 ## Run the code
 
 ```
-python train_model.py --meme_file "Test.meme" --atac_file "ATACseqSignal.txt" --sequences "sequences.list" --cell_type "B" --model_output "test"
+python train_model.py --architecture model_pos_attention_calib_sigmoid_interaction --meme-file cisBP_mouse.meme --atac-file lineageImmgenDataZ.txt --sequences sequences.list --model-output checkpoint --split-folder split_folder --batch-size 254
 ```
