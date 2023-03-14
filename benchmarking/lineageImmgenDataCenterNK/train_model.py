@@ -1,3 +1,8 @@
+# import to access AI-TAC model
+import sys
+sys.path.append("/net/talisker/home/benos/mae117/collaborations/tiSFM/ATAConv")
+sys.path.append("/net/talisker/home/benos/mae117/collaborations/tiSFM/ATAConv/models/AI-TAC/code/")
+
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from adam_penalty import AdamL1, AdamMCP
 from torch.optim import AdamW
@@ -5,6 +10,7 @@ from utils import SeqDataset
 import torch, numpy as np
 import os, pickle, argparse
 from importlib import import_module
+import aitac
 
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
@@ -32,24 +38,24 @@ parser.add_argument("--class_name", default="TISFM", help="Model class name.")
 
 args = parser.parse_args()
 
-meme_file = args.meme_file
-signal_file = args.atac_file
-sequence_file = args.sequences
-model_output = args.model_output
-split_folder = args.split_folder
+meme_file         = args.meme_file
+signal_file       = args.atac_file
+sequence_file     = args.sequences
+model_output      = args.model_output
+split_folder      = args.split_folder
 architecture_name = args.architecture
-window_size = args.window_size
-number_of_epochs = args.number_of_epochs
-batch_size = args.batch_size
-num_of_workers = args.num_of_workers
-penalty_param = args.penalty_param
-mcp_beta = args.mcp_param
-penalty_type = args.penalty_type
-model_name = args.model
-learning_rate = args.lr
-response_dim = args.response_num
-unfreeze = args.unfreeze_conv
-class_name = args.class_name
+window_size       = args.window_size
+number_of_epochs  = args.number_of_epochs
+batch_size        = args.batch_size
+num_of_workers    = args.num_of_workers
+penalty_param     = args.penalty_param
+mcp_beta          = args.mcp_param
+penalty_type      = args.penalty_type
+model_name        = args.model
+learning_rate     = args.lr
+response_dim      = args.response_num
+unfreeze          = args.unfreeze_conv
+class_name        = args.class_name
 
 if model_name is None:
     model_i = -1
@@ -64,10 +70,12 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Device: {device_name}")
 
 architecture = getattr(import_module(f"models.{architecture_name}"), class_name)
-model = architecture(response_dim, meme_file, window_size).to(device)
+
+#model = architecture(response_dim, meme_file, window_size).to(device)
+model = architecture(num_classes=response_dim, num_filters=window_size).to(device)
+
 if unfreeze:
   model.unfreeze()
-
 
 if model_name is None:
     model.init_weights()

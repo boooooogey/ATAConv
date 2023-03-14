@@ -1,0 +1,16 @@
+#!/bin/bash
+
+PREFIX="/net/talisker/home/benos/mae117/collaborations/tiSFM/ATAConv/benchmarking/data"
+FOLD_NUM=$1
+
+#==== Call Training Script
+python train_model.py --meme_file "${PREFIX}/memes/cisBP_mouse.meme" \
+			--atac_file "${PREFIX}/lineages/lineageImmgenDataCenterNK.txt" \
+		 	--sequences "${PREFIX}/sequences/sequences.list" \
+		 	--model_output "${PREFIX}/model_outputs/aitac_centernk/fold_${FOLD_NUM}" \
+			--split_folder "${PREFIX}/splits_all/10foldcv/fold_${FOLD_NUM}" \
+		 	--architecture "aitac" \
+		 	--number_of_epochs 500 \
+		 	--response_num 9 \
+		 	--lr 0.01 \
+		 	--class_name "ConvNet"	

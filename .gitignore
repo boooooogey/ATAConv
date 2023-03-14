@@ -139,6 +139,6 @@ dmypy.json
 .*.s??
 
 # Benchmarking extras
-AI-TAC/
-ExplaiNN/
-data/
+models/AI-TAC/
+models/ExplaiNN/
+benchmarking/data/
