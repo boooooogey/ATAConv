@@ -66,8 +66,10 @@ class MEME():
             if (transform != "none"):
                 offset=np.min(kernel[kernel>0])
                 kernel=np.log((kernel+offset)/bg)
-            out[2*k  , :, :kernel.shape[1]] = kernel
-            out[2*k+1, :, :kernel.shape[1]] = kernel[::-1, ::-1]
+            kernel_start = int((height - kernel.shape[1])/2)
+            kernel_end = kernel_start + kernel.shape[1]
+            out[2*k  , :, kernel_start:kernel_end] = kernel
+            out[2*k+1, :, kernel_start:kernel_end] = kernel[::-1, ::-1]
         return torch.from_numpy(out)
 
     def motif_names(self):

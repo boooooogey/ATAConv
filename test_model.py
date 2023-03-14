@@ -98,7 +98,7 @@ parser.add_argument("--architecture", required=True, help="Architecture to be us
 parser.add_argument("--window-size", default=300, type=int, help="Length of the sequence fragments")
 parser.add_argument("--batch-size", default=254, type=int, help="Batch size")
 parser.add_argument("--num-of-workers", default = 8, type=int, help="Number of workers for data loading")
-parser.add_argument("--stat-out", help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
+parser.add_argument("--stat-out", default=None, help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
 parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
 parser.add_argument("--class-name", default="TISFM", help="Model class name.")
 parser.add_argument("--use-validation", action="store_true", help="Use validation split instead of test.")
@@ -167,10 +167,12 @@ if plotpath:
   annotate_i = 6
   for i in range(path_length):
     model.load_model(os.path.join(model_name, f"path_{i}", "model.best"))
-    final_layers.append(model.linreg.weight.cpu().detach().numpy())
+    if i == 0:
+      motif_names = model.meme_file.motif_names() #motif_ranks() 
+      n = len(motif_names)
+    final_layers.append(model.linreg.weight.cpu().detach().numpy()[:,:n])
     res.append(evaluate_model(dataloader, loss, model, names, False))
     res[-1].index = [f"path_{i}"]
-  _, motif_names, _ = model.motif_ranks() 
   res = pd.concat(res)
   to_plot_res = res.melt()
   res["lambda"] = penalty_param_list
@@ -207,13 +209,15 @@ if plotpath:
 else:
   if os.path.isdir(model_name):
     if os.path.exists(os.path.join(model_name, "model.best")):
-      file_stat = os.path.join(model_name, file_name)
+      if file_stat is None:
+          file_stat = os.path.join(model_name, file_name)
       model_name = os.path.join(model_name, f"model.best")
     else:
       stats = read_from_pickle(os.path.join(model_name, "stats.pkl"))
       ii = np.argmin(stats["validation_average_loss"])
       print(f"Best model validation MSE: {stats['validation_average_loss'][ii]}, Epoch: {stats['epoch'][ii]}.")
-      file_stat = os.path.join(model_name, file_name)
+      if file_stat is None:
+          file_stat = os.path.join(model_name, file_name)
       model_name = os.path.join(model_name, f"model.{stats['epoch'][ii]}")
 
   model.load_model(model_name)
@@ -231,7 +235,6 @@ else:
   else:
     out.to_csv(file_stat, sep="\t")
   if plotfinallayer:
-    print("hello")
     print(os.path.join(os.path.dirname(model_name), "final_layer.png"))
     plot_final_layer(model, names, topmotifs, os.path.join(os.path.dirname(model_name), "final_layer.png"))
 
