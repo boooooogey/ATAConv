@@ -1,0 +1,3 @@
+[submodule "benchmarking/AI-TAC"]
+	path = benchmarking/AI-TAC
+	url = https://github.com/smaslova/AI-TAC.git

@@ -1,3 +1,9 @@
+#==== Libaries
+
+# added for visibility
+import sys
+sys.path.append("/net/talisker/home/benos/mae117/collaborations/atac_convolutions/ATAConv")
+
 from utils import SeqDataset
 import torch, numpy as np
 import os, pickle, argparse, pandas as pd
@@ -10,13 +16,19 @@ from models.aitac import ConvNet
 
 PREFIX_DATA  = "/net/talisker/home/benos/mae117/collaborations/atac_convolutions/data"
 PREFIX_AITAC = "/net/talisker/home/benos/mae117/collaborations/atac_convolutions/AI-TAC"
-meme         = f"{PREFIX_DATA}/cisBP_mouse.meme"                
-bed          = f"{PREFIX_DATA}/lineageImmgenDataZ.txt"         
-seq          = f"{PREFIX_DATA}/sequences.list"                  
-out          = f"{PREFIX_DATA}/model_outputs/aitac/10foldcv/fold_9" 
-splits       = f"{PREFIX_DATA}/10foldcv/fold_9"
-model_v      = f"model.0"
-file         = f"aitac"                  
+FOLD_NUM = 0
+meme   = f"{PREFIX_DATA}/cisBP_mouse.meme"                
+
+# differnet lineage files in this iteration
+bed    = f"{PREFIX_DATA}/lineageImmgenDataZ.txt"         
+#bed    = f"{PREFIX_DATA}/diffImmgenData.txt"         
+#bed    = f"{PREFIX_DATA}/fullImmgenDataZ.txt"         
+
+seq    = f"{PREFIX_DATA}/sequences.list"                  
+out    = f"{PREFIX_DATA}/model_outputs/aitac_lineage/10foldcv/fold_{FOLD_NUM}"
+splits = f"{PREFIX_DATA}/10foldcv/fold_{FOLD_NUM}"
+file   = f"aitac"                  
+#model_v      = f"model.0"
 
 #==== Functions
 
@@ -41,7 +53,14 @@ if __name__=="__main__":
   parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
   parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
   parser.add_argument("--num_of_workers", default=8, type=int, help="Number of workers for data loading")
-  parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
+
+  if "lineage" in bed:
+    parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
+  elif "diff" in bed:
+    parser.add_argument("--response_num", default=82, type=int, help="number of signals to predict")
+  elif "full" in bed:
+    parser.add_argument("--response_num", default=90, type=int, help="number of signals to predict")
+
   parser.add_argument("--class_name", default="ConvNet", help="Model class name.")
 
   # add

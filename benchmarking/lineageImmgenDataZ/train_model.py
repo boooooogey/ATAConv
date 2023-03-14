@@ -1,5 +1,9 @@
 #==== Libaries
 
+# added for visibility
+import sys
+sys.path.append("/net/talisker/home/benos/mae117/collaborations/tiSFM/ATAConv")
+
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from adam_penalty import AdamL1, AdamMCP
 from torch.optim import AdamW
@@ -13,13 +17,20 @@ from models.aitac import ConvNet
 
 #==== Constants
 
-PREFIX_DATA  = "/net/talisker/home/benos/mae117/collaborations/atac_convolutions/data"
-PREFIX_AITAC = "/net/talisker/home/benos/mae117/collaborations/atac_convolutions/AI-TAC"
+PREFIX_DATA  = "/net/talisker/home/benos/mae117/collaborations/tiSFM/data"
+PREFIX_AITAC = "/net/talisker/home/benos/mae117/collaborations/tiSFM/AI-TAC"
+FOLD_NUM = 9
 meme   = f"{PREFIX_DATA}/cisBP_mouse.meme"                
-bed    = f"{PREFIX_DATA}/lineageImmgenDataZ.txt"         
+
+# differnet lineage files in this iteration
+bed    = f"{PREFIX_DATA}/lineageImmgenDataCenterNK.txt"         
+#bed    = f"{PREFIX_DATA}/lineageImmgenDataZ.txt"         
+#bed    = f"{PREFIX_DATA}/diffImmgenData.txt"         
+#bed    = f"{PREFIX_DATA}/fullImmgenDataZ.txt"         
+
 seq    = f"{PREFIX_DATA}/sequences.list"                  
-out    = f"{PREFIX_DATA}/model_outputs/aitac/10foldcv/fold_9"    
-splits = f"{PREFIX_DATA}/10foldcv/fold_9"
+out    = f"{PREFIX_DATA}/model_outputs/aitac_centernk/10foldcv/fold_{FOLD_NUM}"
+splits = f"{PREFIX_DATA}/10foldcv/fold_{FOLD_NUM}"
 file   = f"aitac"                  
 
 #==== Functions
@@ -38,7 +49,7 @@ if __name__=="__main__":
   parser.add_argument("--split_folder", default=splits, help="Folder that stores train/val/test splits.")
   parser.add_argument("--architecture", default=file, help="Architecture to be used.")
   parser.add_argument("--window_size", default=300, type=int, help="Length of the sequence fragments")
-  parser.add_argument("--number_of_epochs", default=10, type=int, help="Number of epochs for training")
+  parser.add_argument("--number_of_epochs", default=100, type=int, help="Number of epochs for training")
   parser.add_argument("--batch_size", default=254, type=int, help="Batch size")
   parser.add_argument("--num_of_workers", default=8, type=int, help="Number of workers for data loading")
   parser.add_argument("--penalty_param", default=0, type=float, help="Hyperparameter for the regularization of the final layer")
@@ -46,7 +57,16 @@ if __name__=="__main__":
   parser.add_argument("--penalty_type", default="l1", help="l1/mcp regularization")
   parser.add_argument("--model", default=None, help="Start from the given state.")
   parser.add_argument("--lr", default=None, type=float, help="Learning rate")
-  parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
+
+  if "CenterNK" in bed:
+    parser.add_argument("--response_num", default=9, type=int, help="number of signals to predict")
+  elif "diff" in bed:
+    parser.add_argument("--response_num", default=82, type=int, help="number of signals to predict")
+  elif "full" in bed:
+    parser.add_argument("--response_num", default=90, type=int, help="number of signals to predict")
+  else:
+    parser.add_argument("--response_num", default=8, type=int, help="number of signals to predict")
+
   parser.add_argument("--unfreeze_conv", action='store_true', help="Whether to unfreeze the motifs or to keep them frozen (default: false)") 
   parser.add_argument("--class_name", default="ConvNet", help="Model class name.")
 
@@ -139,7 +159,8 @@ if __name__=="__main__":
       if 'lr' in stats:
           learning_rate = stats['lr'][-1]
       else:
-          learning_rate = 0.001
+          #learning_rate = 0.001 try this after
+          learning_rate = 0.01
 
   if penalty_param != 0:
     if penalty_type == "l1":

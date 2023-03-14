@@ -1,12 +1,12 @@
 #!/bin/bash
 
-#SBATCH --job-name=preprocess_metabolites
+#SBATCH --job-name=tiSFM
 #SBATCH -p benos
 #SBATCH -t 8:00:00
 #SBATCH --gres=gpu:0
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=1
-#SBATCH --output sbatch.stdout
+#SBATCH --cpus-per-task
+##SBATCH --output tiSFM.stdout
 
 # GET TUNNELING INFO====
 

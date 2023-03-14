@@ -137,3 +137,8 @@ dmypy.json
 
 # IGNORE VIM
 .*.s??
+
+# Benchmarking extras
+AI-TAC/
+ExplaiNN/
+data/
