@@ -1,7 +1,13 @@
 #!/bin/bash
 
-for i in {0..9}; do 
-	./benchmark ${i}
-done
+#SBATCH --job-name=AI-TAC
+#SBATCH --array=0-9
+#SBATCH --partition=dept_gpu
+#SBATCH --output=logs/%j.out
+#SBATCH --gres=gpu:1
+
+echo "Benchmarking on fold: ${SLURM_ARRAY_TASK_ID}"
+
+./benchmark ${SLURM_ARRAY_TASK_ID}
 
 
