@@ -1,13 +1,14 @@
 #!/bin/bash
 
-#SBATCH --job-name=AI-TAC
 #SBATCH --array=0-9
-#SBATCH --partition=dept_gpu
+#SBATCH --partition=benos_gpu
 #SBATCH --output=logs/%j.out
 #SBATCH --gres=gpu:1
 
-echo "Benchmarking on fold: ${SLURM_ARRAY_TASK_ID}"
+OPERATION=$1
 
-./benchmark ${SLURM_ARRAY_TASK_ID}
+echo "performing ${OPERATION} benchmarking on fold: ${SLURM_ARRAY_TASK_ID}"
+
+./benchmark ${SLURM_ARRAY_TASK_ID} ${OPERATION}
 
 

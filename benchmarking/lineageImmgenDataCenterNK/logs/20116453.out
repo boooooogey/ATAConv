@@ -1,0 +1,126 @@
+performing test benchmarking on fold: 1
+/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/site-packages/torch/utils/data/dataloader.py:554: UserWarning: This DataLoader will create 8 worker processes in total. Our suggested max number of worker in current system is 2, which is smaller than what this DataLoader is going to create. Please be aware that excessive worker creation might get DataLoader running slow or even freeze, lower the worker number to avoid potential slowness/freeze if necessary.
+  warnings.warn(_create_warning_msg(
+Best model validation MSE: 0.41149333119392395, Epoch: 24.
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000b8008239500000d8b'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000f000921c900000d90'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000d80dcbc7f00000d8d'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000e00e6533300000d8e'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000e802ed3c900000d8f'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000c00cc6ef000000d8c'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000c8119c7a400000d8b'
+Traceback (most recent call last):
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 300, in _run_finalizers
+    finalizer()
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 224, in __call__
+    res = self._callback(*self._args, **self._kwargs)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/multiprocessing/util.py", line 133, in _remove_temp_dir
+    rmtree(tempdir)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 734, in rmtree
+    _rmtree_safe_fd(fd, path, onerror)
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 690, in _rmtree_safe_fd
+    onerror(os.unlink, fullname, sys.exc_info())
+  File "/net/talisker/home/benos/mae117/miniconda3/lib/python3.9/shutil.py", line 688, in _rmtree_safe_fd
+    os.unlink(entry.name, dir_fd=topfd)
+OSError: [Errno 16] Device or resource busy: '.nfs0000000d00f9d0c900000d91'
+Overall average MSE = 0.41324546933174133
+Average MSE for abT = 0.20793582499027252
+Average MSE for B = 0.3450496792793274
+Average MSE for gdT = 0.303699791431427
+Average MSE for innate.lym = 0.5164387822151184
+Average MSE for myeloid = 0.4482915997505188
+Average MSE for NK = 0.4845096170902252
+Average MSE for stem = 0.5796180367469788
+Average MSE for stroma = 0.5363787412643433
+Average MSE for T.act = 0.2972875237464905
