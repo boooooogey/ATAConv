@@ -27,7 +27,7 @@ class TISFM(TemplateModel):
 
     self.attentionpooling_module1 = AttentionPooling1D(self.conv_length , self.out_channels, mode = "diagonal")
 
-    self.attentionpooling_module2 = AttentionPooling1D(self.conv_length // 2 , self.out_channels, mode = "diagonal")
+    self.attentionpooling_module2 = AttentionPooling1D(int(np.ceil(self.conv_length/2)) , self.out_channels, mode = "diagonal")
 
     #self.attentionpooling_module3 = AttentionPooling1D(self.conv_length // 3 , self.out_channels, mode = "diagonal")
 
@@ -43,7 +43,7 @@ class TISFM(TemplateModel):
 
     if self.l != l:
         ii_f = torch.arange(l//2, device = x.get_device())
-        ii_r = torch.flip(torch.arange(l - l//2, device = x.get_device()),dims=[0])
+        ii_r = torch.flip(torch.arange(l - l//2, device = x.get_device()), dims=[0])
 
         self.ii = torch.cat([ii_f, ii_r])
         self.l = l
