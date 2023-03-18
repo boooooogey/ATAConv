@@ -58,7 +58,7 @@ class TISFM(TemplateModel):
     x = self.sigmoid(x)
 
     interactions_in = torch.cat([self.attentionpooling_module1(x)[0],
-                                 self.attentionpooling_module2(x)[0]],dim=1)
+                                 self.attentionpooling_module2(x)[0]],dim=2)
 
     interactions_in = interactions_in.view(interactions_in.shape[0], -1)
 
