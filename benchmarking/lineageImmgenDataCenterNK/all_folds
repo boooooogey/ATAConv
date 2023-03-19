@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --array=0-9
-#SBATCH --partition=benos_gpu
-#SBATCH --output=logs/%j.out
+#SBATCH --partition=dept_gpu
+#SBATCH --output=logs/train-0001_%j.out
 #SBATCH --gres=gpu:1
 
 OPERATION=$1
@@ -10,5 +10,3 @@ OPERATION=$1
 echo "performing ${OPERATION} benchmarking on fold: ${SLURM_ARRAY_TASK_ID}"
 
 ./benchmark ${SLURM_ARRAY_TASK_ID} ${OPERATION}
-
-

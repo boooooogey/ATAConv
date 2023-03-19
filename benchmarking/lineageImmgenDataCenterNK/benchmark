@@ -8,18 +8,18 @@ if [ ${OPERATION} == "train" ]; then
 	python train_model.py --meme-file "${PREFIX}/memes/cisBP_mouse.meme" \
 		--atac-file "${PREFIX}/lineages/lineageImmgenDataCenterNK.txt" \
 		--sequences "${PREFIX}/sequences/sequences.list" \
-		--model-output "${PREFIX}/model_outputs/aitac_centernk/fold_${FOLD_NUM}" \
+		--model-output "${PREFIX}/model_outputs/aitac_centernk_v4/fold_${FOLD_NUM}" \
 		--split-folder "${PREFIX}/splits_all/10foldcv/fold_${FOLD_NUM}" \
 		--architecture "aitac" \
-		--number-of-epochs 500 \
-		--lr 0.01 \
+		--number-of-epochs 1000 \
+		--lr 0.0001 \
 		--class-name "ConvNet"
 	
 elif [ ${OPERATION} == "test" ]; then
 	python test_model.py --meme-file "${PREFIX}/memes/cisBP_mouse.meme" \
 		--atac-file "${PREFIX}/lineages/lineageImmgenDataCenterNK.txt" \
 		--sequences "${PREFIX}/sequences/sequences.list" \
-		--model "${PREFIX}/model_outputs/aitac_centernk_v1/best_fold_${FOLD_NUM}" \
+		--model "${PREFIX}/model_outputs/aitac_centernk_v3/fold_${FOLD_NUM}" \
 		--split-folder "${PREFIX}/splits_all/10foldcv/fold_${FOLD_NUM}" \
 		--architecture "aitac" \
 		--ai-atac \
