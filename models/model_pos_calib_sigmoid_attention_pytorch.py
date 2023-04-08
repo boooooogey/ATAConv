@@ -23,7 +23,7 @@ class TISFM(TemplateModel):
 
     self.position_emb = Embedding(self.conv_length * 2, 1)
 
-    self.attention_interaction = torch.nn.MultiheadAttention(self.out_channels, 8, kdim = 64)
+    self.attention_interaction = torch.nn.MultiheadAttention(self.out_channels, 19, kdim = 64)
 
     self.attentionpooling = AttentionPooling1D(self.conv_length * 2, self.out_channels//2, mode = "diagonal")
 
