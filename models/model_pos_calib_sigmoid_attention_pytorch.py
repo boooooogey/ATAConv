@@ -38,7 +38,7 @@ class TISFM(TemplateModel):
     #attention on convolution output
     pos = self.position_emb(torch.arange(x.shape[2], device = x.get_device())).view(1,1,-1)
     v = (x + pos).transpose(1,2)
-    x = x + self.attention_interaction(x + pos, x + pos, x + pos, need_weights=False).transpose(1,2)
+    x = x + self.attention_interaction(x.tranpose(1,2), v, v, need_weights=False).transpose(1,2)
 
     x = x.view(x.shape[0], x.shape[1]//2, x.shape[2]*2)
 
