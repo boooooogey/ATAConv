@@ -14,8 +14,6 @@ from fastattention import FastAttention
 from utils import MEME
 from models.template_model import TemplateModel
 
-class InteractionLayer(torch.nn.Module):
-
 class TISFM(TemplateModel):
   def __init__(self, num_of_response, motif_path, window_size, 
                stride = 1, pad_motif=4):
@@ -23,44 +21,30 @@ class TISFM(TemplateModel):
 
     self.sigmoid = Sigmoid()
 
-    self.position_emb = Embedding(int(np.ceil(window_size/2)), 1)
+    self.position_emb = Embedding(self.conv_length * 2, 1)
 
-    self.attention_layer = SelfAttentionSparse(4, heads=2)
+    self.attention_interaction = torch.nn.MultiheadAttention(self.out_channels, 8, kdim = 64)
 
     self.attentionpooling = AttentionPooling1D(self.conv_length * 2, self.out_channels//2, mode = "diagonal")
-
-    self.interaction_layer = Linear(in_features=self.out_channels//2, out_features=self.out_channels//2, bias=True)
 
     self.l = -1
 
   def forward(self, x):
 
-    l = x.shape[2]
-
-    if self.l != l:
-        ii_f = torch.arange(l//2, device = x.get_device())
-        ii_r = torch.flip(torch.arange(l - l//2, device = x.get_device()),dims=[0])
-
-        self.ii = torch.cat([ii_f, ii_r])
-        self.l = l
-
-    pos = self.position_emb(self.ii).view(1,1,-1)
-
-    #positional embedding
-    attention = self.attention_layer(x + pos)
-    x = x + attention
-
     x = self.motif_layer(x)
 
     x = self.sigmoid(x)
+
+    #attention on convolution output
+    pos = self.position_emb(torch.arange(x.shape[2], device = x.get_device())).view(1,1,-1)
+    v = (x + pos).transpose(1,2)
+    x = x + self.attention_interaction(x + pos, x + pos, x + pos, need_weights=False).transpose(1,2)
+
     x = x.view(x.shape[0], x.shape[1]//2, x.shape[2]*2)
 
     #attention pooling
     x, _ = self.attentionpooling(x)
     x = x.view(x.shape[0], x.shape[1])
-
-    interactions = self.sigmoid(self.interaction_layer(x))
-    x = x * interactions
 
     #regression
     y = self.linreg(x)

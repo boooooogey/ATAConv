@@ -62,7 +62,11 @@ class SelfAttentionSparse(nn.Module):
     self.inner_dim = inner_dim
 
     self.tokey = nn.Parameter(torch.empty(heads, inner_dim, dim))
+    self.tokey_bias = nn.Parameter(torch.empty(1, heads, inner_dim, 1))
+
     self.toquery = nn.Parameter(torch.empty(heads, inner_dim, dim))
+    self.toquery_bias = nn.Parameter(torch.empty(1, heads, inner_dim, 1))
+
     self.tovalue = nn.Parameter(torch.empty(heads, embedding_dim, dim))
     self.tovalue_bias = nn.Parameter(torch.empty(1, heads, embedding_dim, 1))
 
@@ -78,6 +82,8 @@ class SelfAttentionSparse(nn.Module):
         nn.init.xavier_uniform_(self.unifyheads)
         nn.init.uniform_(self.unifyheads_bias, a=-l, b=l)
         nn.init.zeros_(self.tovalue_bias)
+        nn.init.zeros_(self.tokey_bias)
+        nn.init.zeros_(self.toquery_bias)
 
     self.softmax = nn.Softmax(dim=-1)
 
@@ -85,8 +91,8 @@ class SelfAttentionSparse(nn.Module):
     b, c, l, h = *x.size(), self.heads
 
     # Compute inner products between keys and queries
-    key = torch.einsum('bki,hek->bhei', x, self.tokey)
-    query = torch.einsum('heq,bqj->bhej', self.toquery, x)
+    key = torch.einsum('bki,hek->bhei', x, self.tokey) + self.tokey_bias
+    query = torch.einsum('heq,bqj->bhej', self.toquery, x) + self.toquery_bias
     weights = torch.einsum('bhei, bhej -> bhij', key, query) / math.sqrt(self.inner_dim)
 
     #weights = torch.einsum('bki,hek,heq,bqj->bhij', x, self.tokey, self.toquery, x) / math.sqrt(c)
