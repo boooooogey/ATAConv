@@ -1,0 +1,13 @@
+    
+Copy/Paste this in your local terminal to ssh tunnel with remote    
+-----------------------------------------------------------------    
+
+ssh -N -L 8529:10.206.2.131:8529 mae117@cluster
+-----------------------------------------------------------------    
+
+Then open a browser on your local machine to the following address    
+------------------------------------------------------------------    
+
+http://localhost:8529?token=4a638f4f2e9abe2a667a5bf8f981cb5a1268896960929c5b5b7f038133aefb3e    
+------------------------------------------------------------------      
+

@@ -1,0 +1,97 @@
+[W 2023-05-19 16:27:25.329 ServerApp] ServerApp.iopub_data_rate_limit config is deprecated in 2.0. Use ZMQChannelsWebsocketConnection.iopub_data_rate_limit.
+[W 2023-05-19 16:27:25.330 ServerApp] ServerApp.token config is deprecated in 2.0. Use IdentityProvider.token.
+[I 2023-05-19 16:27:25.344 ServerApp] Package jupyterlab took 0.0000s to import
+[I 2023-05-19 16:27:25.383 ServerApp] Package jupyter_lsp took 0.0387s to import
+[W 2023-05-19 16:27:25.383 ServerApp] A `_jupyter_server_extension_points` function was not found in jupyter_lsp. Instead, a `_jupyter_server_extension_paths` function was found and will be used for now. This function name will be deprecated in future releases of Jupyter Server.
+[I 2023-05-19 16:27:25.399 ServerApp] Package jupyter_server_terminals took 0.0148s to import
+[I 2023-05-19 16:27:25.402 ServerApp] Package nbclassic took 0.0026s to import
+[W 2023-05-19 16:27:25.406 ServerApp] A `_jupyter_server_extension_points` function was not found in nbclassic. Instead, a `_jupyter_server_extension_paths` function was found and will be used for now. This function name will be deprecated in future releases of Jupyter Server.
+[I 2023-05-19 16:27:25.407 ServerApp] Package notebook_shim took 0.0000s to import
+[W 2023-05-19 16:27:25.407 ServerApp] A `_jupyter_server_extension_points` function was not found in notebook_shim. Instead, a `_jupyter_server_extension_paths` function was found and will be used for now. This function name will be deprecated in future releases of Jupyter Server.
+[I 2023-05-19 16:27:25.408 ServerApp] jupyter_lsp | extension was successfully linked.
+[I 2023-05-19 16:27:25.413 ServerApp] jupyter_server_terminals | extension was successfully linked.
+[I 2023-05-19 16:27:25.420 ServerApp] jupyterlab | extension was successfully linked.
+[W 2023-05-19 16:27:25.465 NotebookApp] 'allow_origin' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2023-05-19 16:27:25.465 NotebookApp] 'ip' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2023-05-19 16:27:25.465 NotebookApp] 'allow_remote_access' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[W 2023-05-19 16:27:25.465 NotebookApp] 'password' has moved from NotebookApp to ServerApp. This config will be passed to ServerApp. Be sure to update your config before our next release.
+[I 2023-05-19 16:27:25.470 ServerApp] nbclassic | extension was successfully linked.
+[W 2023-05-19 16:27:25.970 ServerApp] ipyparallel.nbextension | error adding extension (enabled: True): The module 'ipyparallel.nbextension' could not be found (No module named 'ipyparallel'). Are you sure the extension is installed?
+    Traceback (most recent call last):
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyter_server/extension/manager.py", line 319, in add_extension
+        extpkg = ExtensionPackage(name=extension_name, enabled=enabled)
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyter_server/extension/manager.py", line 183, in __init__
+        self._load_metadata()
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyter_server/extension/manager.py", line 198, in _load_metadata
+        raise ExtensionModuleNotFound(msg) from None
+    jupyter_server.extension.utils.ExtensionModuleNotFound: The module 'ipyparallel.nbextension' could not be found (No module named 'ipyparallel'). Are you sure the extension is installed?
+[I 2023-05-19 16:27:25.971 ServerApp] notebook_shim | extension was successfully linked.
+[I 2023-05-19 16:27:26.133 ServerApp] notebook_shim | extension was successfully loaded.
+[I 2023-05-19 16:27:26.136 ServerApp] jupyter_lsp | extension was successfully loaded.
+[I 2023-05-19 16:27:26.137 ServerApp] jupyter_server_terminals | extension was successfully loaded.
+[I 2023-05-19 16:27:26.138 LabApp] JupyterLab extension loaded from /net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyterlab
+[I 2023-05-19 16:27:26.138 LabApp] JupyterLab application directory is /net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/share/jupyter/lab
+[I 2023-05-19 16:27:26.139 LabApp] Extension Manager is 'pypi'.
+[I 2023-05-19 16:27:26.143 ServerApp] jupyterlab | extension was successfully loaded.
+[I 2023-05-19 16:27:26.151 ServerApp] nbclassic | extension was successfully loaded.
+[I 2023-05-19 16:27:26.151 ServerApp] Serving notebooks from local directory: /net/talisker/home/benos/mae117/Documents/research/chikina/tiSFM-FT
+[I 2023-05-19 16:27:26.151 ServerApp] Jupyter Server 2.5.0 is running at:
+[I 2023-05-19 16:27:26.151 ServerApp] http://10.206.2.131:8859/lab?token=...
+[I 2023-05-19 16:27:26.151 ServerApp]     http://127.0.0.1:8859/lab?token=...
+[I 2023-05-19 16:27:26.151 ServerApp] Use Control-C to stop this server and shut down all kernels (twice to skip confirmation).
+[I 2023-05-19 16:27:27.906 ServerApp] Skipped non-installed server(s): bash-language-server, dockerfile-language-server-nodejs, javascript-typescript-langserver, jedi-language-server, julia-language-server, pyright, python-language-server, python-lsp-server, r-languageserver, sql-language-server, texlab, typescript-language-server, unified-language-server, vscode-css-languageserver-bin, vscode-html-languageserver-bin, vscode-json-languageserver-bin, yaml-language-server
+[I 2023-05-19 16:29:27.006 ServerApp] 302 GET /?token=[secret] (@10.206.0.9) 0.92ms
+[I 2023-05-19 16:29:27.037 LabApp] Generating new user for token-authenticated request: e3d6285aa5ae42f992a6729c00efa40a
+[W 2023-05-19 16:29:30.291 ServerApp] 404 GET /api/contents/data/inital_peek.ipynb?content=0&1684528170284 (10.206.0.9): No such file or directory: data/inital_peek.ipynb
+[W 2023-05-19 16:29:30.292 ServerApp] wrote error: 'No such file or directory: data/inital_peek.ipynb'
+    Traceback (most recent call last):
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/tornado/web.py", line 1786, in _execute
+        result = await result
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyter_server/services/contents/handlers.py", line 121, in get
+        model = await ensure_async(
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyter_core/utils/__init__.py", line 182, in ensure_async
+        result = await obj
+      File "/net/talisker/home/benos/mae117/mambaforge/envs/tiSFM/lib/python3.10/site-packages/jupyter_server/services/contents/filemanager.py", line 877, in get
+        raise web.HTTPError(404, "No such file or directory: %s" % path)
+    tornado.web.HTTPError: HTTP 404: Not Found (No such file or directory: data/inital_peek.ipynb)
+[W 2023-05-19 16:29:30.302 ServerApp] 404 GET /api/contents/data/inital_peek.ipynb?content=0&1684528170284 (e3d6285aa5ae42f992a6729c00efa40a@10.206.0.9) 11.81ms referer=http://localhost:8859/lab
+[I 2023-05-19 16:29:30.451 LabApp] Build is up to date
+[W 2023-05-19 16:29:42.661 ServerApp] Notebook lineageImmgenDataDiff/train_model.ipynb is not trusted
+[I 2023-05-19 16:29:43.360 ServerApp] Kernel started: 06e908a0-df68-4bb5-98d7-4eedb5de83c9
+[I 2023-05-19 16:29:44.335 ServerApp] Connecting to kernel 06e908a0-df68-4bb5-98d7-4eedb5de83c9.
+[I 2023-05-19 16:29:44.338 ServerApp] Connecting to kernel 06e908a0-df68-4bb5-98d7-4eedb5de83c9.
+[I 2023-05-19 16:29:44.361 ServerApp] Connecting to kernel 06e908a0-df68-4bb5-98d7-4eedb5de83c9.
+[I 2023-05-19 16:31:42.808 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:33:43.513 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:35:43.586 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:39:43.679 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:41:43.755 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:43:43.836 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:45:43.920 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:49:44.003 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:51:44.078 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:53:44.163 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:55:44.239 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:57:44.321 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 16:59:44.392 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:01:44.460 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:03:44.523 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:05:44.595 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:07:44.660 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:09:44.744 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:13:44.825 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:15:44.908 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:17:44.995 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:19:45.068 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:21:45.155 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:23:45.244 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:25:45.322 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:27:26.187 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:27:37.772 ServerApp] Kernel interrupted: 06e908a0-df68-4bb5-98d7-4eedb5de83c9
+[I 2023-05-19 17:27:37.884 ServerApp] Kernel interrupted: 06e908a0-df68-4bb5-98d7-4eedb5de83c9
+[I 2023-05-19 17:27:38.045 ServerApp] Kernel interrupted: 06e908a0-df68-4bb5-98d7-4eedb5de83c9
+[I 2023-05-19 17:27:38.217 ServerApp] Kernel interrupted: 06e908a0-df68-4bb5-98d7-4eedb5de83c9
+[I 2023-05-19 17:27:39.288 ServerApp] Saving file at /lineageImmgenDataDiff/train_model.ipynb
+[I 2023-05-19 17:27:40.372 ServerApp] Starting buffering for 06e908a0-df68-4bb5-98d7-4eedb5de83c9:fa2091e6-d5d8-4541-bfc0-c9801b8ab272
+[I 2023-05-19 17:27:44.524 ServerApp] Kernel shutdown: 06e908a0-df68-4bb5-98d7-4eedb5de83c9
+slurmstepd: error: *** JOB 24502022 ON g131 CANCELLED AT 2023-05-19T17:28:24 ***

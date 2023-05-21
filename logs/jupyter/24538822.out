@@ -1,0 +1,13 @@
+    
+Copy/Paste this in your local terminal to ssh tunnel with remote    
+-----------------------------------------------------------------    
+
+ssh -N -L 9933:10.206.2.131:9933 mae117@cluster
+-----------------------------------------------------------------    
+
+Then open a browser on your local machine to the following address    
+------------------------------------------------------------------    
+
+http://localhost:9933?token=f70f765dbddb383bacd99cf4c71db11c9cb6c6ad5b5e3db3dba3581cc74c4d60    
+------------------------------------------------------------------      
+

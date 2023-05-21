@@ -1,0 +1,28 @@
+no change     /net/talisker/home/benos/mae117/mambaforge/condabin/conda
+no change     /net/talisker/home/benos/mae117/mambaforge/bin/conda
+no change     /net/talisker/home/benos/mae117/mambaforge/bin/conda-env
+no change     /net/talisker/home/benos/mae117/mambaforge/bin/activate
+no change     /net/talisker/home/benos/mae117/mambaforge/bin/deactivate
+no change     /net/talisker/home/benos/mae117/mambaforge/etc/profile.d/conda.sh
+no change     /net/talisker/home/benos/mae117/mambaforge/etc/fish/conf.d/conda.fish
+no change     /net/talisker/home/benos/mae117/mambaforge/shell/condabin/Conda.psm1
+no change     /net/talisker/home/benos/mae117/mambaforge/shell/condabin/conda-hook.ps1
+no change     /net/talisker/home/benos/mae117/mambaforge/lib/python3.10/site-packages/xontrib/conda.xsh
+no change     /net/talisker/home/benos/mae117/mambaforge/etc/profile.d/conda.csh
+modified      /net/talisker/home/benos/mae117/.bashrc
+
+==> For changes to take effect, close and re-open your current shell. <==
+
+    
+Copy/Paste this in your local terminal to ssh tunnel with remote    
+-----------------------------------------------------------------    
+
+ssh -N -L 8525:10.206.2.131:8525 mae117@cluster
+-----------------------------------------------------------------    
+
+Then open a browser on your local machine to the following address    
+------------------------------------------------------------------    
+
+http://localhost:8525?token=937a7337121b8759324c008a4eb7f12d1f4652b9d16f76eeb079df45952723fe    
+------------------------------------------------------------------      
+

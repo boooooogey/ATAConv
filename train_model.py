@@ -1,11 +1,43 @@
+#==== Libraries
+#{{{
+import sys
+sys.path.append("/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv")
+
+import torch, numpy as np
+import os, pickle, argparse
+import pandas as pd
+import matplotlib.pyplot as plt
+import scipy.special
+import scipy.stats
+import scipy.ndimage
+import sklearn.metrics
+import pyfaidx
+import tqdm
+
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from adam_penalty import AdamL1, AdamMCP
 from torch.optim import AdamW
 from utils import SeqDataset
-import torch, numpy as np
-import os, pickle, argparse
 from importlib import import_module
+#}}}
 
+#==== Variables, Constants & More
+#{{{
+PREFIX_DATA  = "/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv/data"
+FOLD_NUM = 9
+
+meme   = f"{PREFIX_DATA}/memes/cisBP_mouse.meme"                
+bed    = f"{PREFIX_DATA}/lineages/lineageImmgenDataCenterNK.txt"         
+#bed    = f"{PREFIX_DATA}/lineageImmgenDataZ.txt"         
+#bed    = f"{PREFIX_DATA}/diffImmgenData.txt"         
+#bed    = f"{PREFIX_DATA}/fullImmgenDataZ.txt"         
+seq    = f"{PREFIX_DATA}/sequences/sequences.list"                  
+out    = f"/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv/data/model_outputs/aitac_centernk_FT/10foldcv/fold_{FOLD_NUM}"
+splits = f"/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv/data/splits_all/10foldcv/fold_{FOLD_NUM}"
+#}}}
+
+#==== Functions
+#{{{
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
     pickle.dump(data, file)
@@ -121,64 +153,49 @@ def empty_stats():
       }
   return stats
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--meme-file", required=True, help="Path to the meme file that stores PWMs")
-parser.add_argument("--atac-file", required=True, help="Path to the file that stores ATAC signal")
-parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
-parser.add_argument("--model-output", required=True, help="Directory to store model parameters")
-parser.add_argument("--split-folder", required=True, help="Folder that stores train/val/test splits.")
-parser.add_argument("--architecture", required=True, help="Architecture to be used.")
-parser.add_argument("--window-size", default=300, type=int, help="Length of the sequence fragments")
-parser.add_argument("--number-of-epochs", default=10, type=int, help="Number of epochs for training")
-parser.add_argument("--batch-size", default=254, type=int, help="Batch size")
-parser.add_argument("--num-of-workers", default=8, type=int, help="Number of workers for data loading")
-parser.add_argument("--penalty-param", nargs='+', default=[0], type=float, help="Hyperparameter for the regularization of the final layer")
-parser.add_argument("--penalty-param-range", nargs=3, default=None, type=float, help="Linear range for the path algorithm as --penalty-param-range start stop number. The other options are ignored if this one is given.")
-parser.add_argument("--log-penalty-param-range", action="store_true", help="Use log range instead of the linear range.")
-parser.add_argument("--mcp-param", default=3, type=float, help="Second hyperparameter for the mcp regularization of the final layer (first is --penalty_param)")
-parser.add_argument("--penalty-type", default="l1", help="l1/mcp regularization")
-parser.add_argument("--model", default=None, help="Start from the given state.")
-parser.add_argument("--lr", default=None, type=float, help="Learning rate")
-parser.add_argument("--step-lr", default=None, type=float, help="For path algorithm.")
-parser.add_argument("--unfreeze-conv", action='store_true', help="Whether to unfreeze the motifs or to keep them frozen (default: false)") 
-parser.add_argument("--class-name", default="TISFM", help="Model class name.")
-parser.add_argument("--save-all", action='store_true', help="Whether to save at the end of every epoch.") 
-parser.add_argument("--early-stopping", action='store_true', help="Whether to stop training early if validation MSE does not improve.") 
-parser.add_argument("--early-stopping-threshold", default=1e-7, type=float, help="If early stopping is set, the learning rate is checked to decide whether to stop training.") 
-parser.add_argument("--penalize-layers", default=['linreg.weight'], type=str, help="on which layers, the penalty should be imposed.") 
-parser.add_argument("--freeze-all-except-final-layer", action='store_true', help="If set, all the layers are frozen except for the final layer.") 
-parser.add_argument("--unfreeze-all", action='store_true', help="Unfreeze all layers.") 
+def fourier_loss():
+    return None
+#}}}
 
-args = parser.parse_args()
-
+#==== Model Training
+#{{{
 params = dict()
 
-meme_file = args.meme_file
-signal_file = args.atac_file
-sequence_file = args.sequences
-model_output = args.model_output
-split_folder = args.split_folder
-architecture_name = args.architecture
-window_size = args.window_size
-params['number_of_epochs'] = args.number_of_epochs
-batch_size = args.batch_size
-num_of_workers = args.num_of_workers
-penalty_param = args.penalty_param
-penalty_param_range = args.penalty_param_range
-log_penalty_param_range = args.log_penalty_param_range
-mcp_beta = args.mcp_param
-penalty_type = args.penalty_type
-model_name = args.model
-learning_rate = args.lr
-step_learning_rate = args.step_lr
-unfreeze_conv = args.unfreeze_conv
-class_name = args.class_name
-params['save_all'] = args.save_all
-params['early_stopping'] = args.early_stopping
-params['es_threshold'] = args.early_stopping_threshold
-penalize_layers = args.penalize_layers
-freeze_all_except_final = args.freeze_all_except_final_layer
-unfreeze_all = args.unfreeze_all
+if "CenterNK" in bed:
+  response_dim = 9
+elif "diff" in bed:
+  response_dim = 82
+elif "full" in bed:
+  response_dim = 90
+else:
+  response_dim = 8
+
+meme_file = meme
+signal_file = bed
+sequence_file = seq
+model_output = out
+split_folder = splits
+architecture_name = "model_pos_calib_sigmoid"
+window_size = 300
+params['number_of_epochs'] = 100
+batch_size = 254
+num_of_workers = 8
+penalty_param = [0]
+penalty_param_range = None
+log_penalty_param_range = False
+mcp_beta = 3
+penalty_type = "l1"
+model_name = None
+learning_rate = None
+step_learning_rate = None
+unfreeze_conv = False
+class_name = "TISFM"
+params['save_all'] = True
+params['early_stopping'] = True
+params['es_threshold'] = 1e-7
+penalize_layers = ['linreg.weight']
+freeze_all_except_final = False
+unfreeze_all = False
 
 if model_name is None or model_name.endswith("model.best"):
     model_i = -1
@@ -220,6 +237,8 @@ params['test_dataloader'] = torch.utils.data.DataLoader(test_dataset, batch_size
 params['validation_dataloader'] = torch.utils.data.DataLoader(validation_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
 
 params['loss'] = torch.nn.MSELoss(reduction="mean")
+
+stat_exists = os.path.exists(os.path.join(model_output, "stats.pkl"))
 
 stat_exists = os.path.exists(os.path.join(model_output, "stats.pkl"))
 if model_i != -1 and stat_exists:
@@ -302,3 +321,4 @@ else:
   params['model_output'] = model_output
 
   train_model(**params)
+#}}}

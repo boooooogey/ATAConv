@@ -1,0 +1,13 @@
+    
+Copy/Paste this in your local terminal to ssh tunnel with remote    
+-----------------------------------------------------------------    
+
+ssh -N -L 8255:10.206.2.131:8255 mae117@cluster
+-----------------------------------------------------------------    
+
+Then open a browser on your local machine to the following address    
+------------------------------------------------------------------    
+
+http://localhost:8255?token=54c2cb1f9c52191105c43f2d54a8cb799315487e2ccba127097819fb79d04a4f    
+------------------------------------------------------------------      
+
