@@ -25,7 +25,8 @@ class TISFM(TemplateModel):
 
     self.attentionpooling = AttentionPooling1D(self.conv_length * 2, self.out_channels//2, mode = "diagonal")
 
-    self.interaction_layer = Linear(in_features=self.out_channels//2, out_features=self.out_channels//2, bias=True)
+    self.interaction_layer_mute = Linear(in_features=self.out_channels//2, out_features=self.out_channels//2, bias=True)
+    self.interaction_layer_amplify = Linear(in_features=self.out_channels//2, out_features=self.out_channels//2, bias=True)
 
     self.l = -1
 
@@ -54,8 +55,10 @@ class TISFM(TemplateModel):
     x, _ = self.attentionpooling(x)
     x = x.view(x.shape[0], x.shape[1])
 
-    interactions = self.sigmoid(self.interaction_layer(x))
-    x = x * interactions + (1 - x) * interactions
+    mute = self.sigmoid(self.interaction_layer_mute(x))
+    amplify= self.sigmoid(self.interaction_layer_amplify(x))
+
+    x = x * mute + (1 - x) * amplify 
 
     #regression
     y = self.linreg(x)
