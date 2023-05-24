@@ -1,0 +1,3 @@
+[submodule "models/fourier_attribution_priors"]
+	path = models/fourier_attribution_priors
+	url = https://github.com/amtseng/fourier_attribution_priors.git

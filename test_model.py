@@ -1,3 +1,5 @@
+#==== Libraries
+#{{{
 from utils import SeqDataset
 import torch, numpy as np
 import os, pickle, argparse, pandas as pd
@@ -5,10 +7,18 @@ from importlib import import_module
 from matplotlib import colors, pyplot as plt
 import seaborn
 
-####DELETE##################
-from IPython import embed###
-############################
+import shap
+from deeplift.dinuc_shuffle import dinuc_shuffle
+#}}}
 
+#==== Variables, Constants & More
+#{{{
+PREFIX_DATA  = "/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv/data"
+FOLD_NUM = 9
+#}}}
+
+#=== Functions
+#{{{
 def save_to_pickle(data, filepath):
   with open(filepath, "wb") as file:
     pickle.dump(data, file)
@@ -87,51 +97,30 @@ def extract_and_write_final_layer(model, names, motif_names, model_name, file_na
             data = pd.read_csv(file_name, sep="\t", header=0, index_col=0)
             out = pd.concat([data, out], axis = 1)
         out.to_csv(file_name, sep="\t", header=True, index=True)
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--meme-file", required=True, help="Path to the meme file that stores PWMs")
-parser.add_argument("--atac-file", required=True, help="Path to the file that stores ATAC signal")
-parser.add_argument("--sequences", required=True, help="Path to the file that stores sequences")
-parser.add_argument("--model", required=True, help="Model file or directory")
-parser.add_argument("--split-folder", required=True, help="Folder that stores train/val/test splits.")
-parser.add_argument("--architecture", required=True, help="Architecture to be used.")
-parser.add_argument("--window-size", default=300, type=int, help="Length of the sequence fragments")
-parser.add_argument("--batch-size", default=254, type=int, help="Batch size")
-parser.add_argument("--num-of-workers", default = 8, type=int, help="Number of workers for data loading")
-parser.add_argument("--stat-out", default=None, help="The stats on the given model will be written to the file. Ignored if --model is a directory.")
-parser.add_argument("--ai-atac", action="store_true", help="Do not check the final layer if the model is ai-atac.")
-parser.add_argument("--class-name", default="TISFM", help="Model class name.")
-parser.add_argument("--use-validation", action="store_true", help="Use validation split instead of test.")
-parser.add_argument("--plot-path", action="store_true", help="If true, plots the results for the path algorithm.")
-parser.add_argument("--plot-final-layer", action="store_true", help="If true, plots the final layer of the network.")
-parser.add_argument("--plot-x-log", action="store_true", help="If true, log normalizes the x axis.")
-parser.add_argument("--top-motifs", default=10, type=int, help="Top motifs for each cell types.")
-parser.add_argument("--model-index", default=None, help="Model name to use when saving.")
-parser.add_argument("--extract-final-layer", default=None, help="Extract and save the final layer.")
+#}}}
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-args = parser.parse_args()
-
-meme_file = args.meme_file
-signal_file = args.atac_file
-sequence_file = args.sequences
-model_name = args.model
-split_folder = args.split_folder
-architecture_name = args.architecture
-window_size = args.window_size
-batch_size = args.batch_size
-num_of_workers = args.num_of_workers
-file_stat = args.stat_out
-isaiatac = args.ai_atac
-class_name = args.class_name
-usevalidation = args.use_validation
-plotpath = args.plot_path
-plotxlog = args.plot_x_log
-plotfinallayer = args.plot_final_layer
-topmotifs = args.top_motifs
-model_index = args.model_index
-extract_final_layer = args.extract_final_layer
+meme_file = f"{PREFIX_DATA}/memes/cisBP_mouse.meme"
+signal_file = f"{PREFIX_DATA}/lineages/lineageImmgenDataCenterNK.txt" 
+sequence_file = f"{PREFIX_DATA}/sequences/sequences.list"
+model_name = f"/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv/data/model_outputs/centernk_fourier-False/10foldcv/fold_{FOLD_NUM}"
+split_folder = f"/net/talisker/home/benos/mae117/Documents/research/chikina/ATAConv/data/splits_all/10foldcv/fold_{FOLD_NUM}"
+architecture_name = "model_pos_calib_sigmoid"
+window_size = 300
+batch_size = 254
+num_of_workers = 8
+file_stat = None
+isaiatac = False
+class_name = "TISFM"
+usevalidation = False
+plotpath = False
+plotxlog = False
+plotfinallayer = False
+plotshap = True
+topmotifs = 10
+model_index = None
+extract_final_layer = None
 
 dataset = SeqDataset(signal_file, sequence_file)
 
@@ -205,7 +194,7 @@ if plotpath:
     fig.tight_layout()
     plt.savefig(os.path.join(model_name, f"path_coef_{names[cell_name_i]}.png"))
     plt.close()
-
+      
 else:
   if os.path.isdir(model_name):
     if os.path.exists(os.path.join(model_name, "model.best")):
