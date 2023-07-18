@@ -1,6 +1,6 @@
-from performer_pytorch.performer_pytorch import *
 import einops
 import torch
+from torch import nn
 
 class FastAttention(nn.Module):
     def __init__(

@@ -9,7 +9,7 @@ from torch.nn import Parameter
 from attention import SelfAttention
 from attention import SelfAttentionSparse
 from attentionpooling import AttentionPooling1D
-from fastattention import FastAttention
+#from fastattention import FastAttention
 
 from utils import MEME
 from models.template_model import TemplateModel
@@ -34,8 +34,11 @@ class TISFM(TemplateModel):
     l = x.shape[2]
 
     if self.l != l:
-        ii_f = torch.arange(l//2, device = x.get_device())
-        ii_r = torch.flip(torch.arange(l - l//2, device = x.get_device()),dims=[0])
+        device_ii = x.get_device()
+        if device_ii < 0:
+            device_ii = torch.device("cpu")
+        ii_f = torch.arange(l//2, device = device_ii)
+        ii_r = torch.flip(torch.arange(l - l//2, device = device_ii),dims=[0])
 
         self.ii = torch.cat([ii_f, ii_r])
         self.l = l
