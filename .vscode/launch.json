@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/train_model.py",
+            "console": "integratedTerminal",
+            "justMyCode": true,
+            "args": ["--architecture", "model_effect_diffusion", "--meme-file", "local/dataset/immgen_atac/cisBP_mouse_selected.meme", "--atac-file", "local/dataset/immgen_atac/dataByLineageRawLog_bcell.txt", "--sequences", "local/dataset/immgen_atac/sequences.list", "--model-output", "local/local/lineageImmgenDataZ/model_effect_diffusion/fold_0", "--split-folder", "local/10foldcv/fold_0", "--number-of-epochs", "1000", "--lr", "0.01", "--batch-size", "1024"]
+        }
+    ]
+}

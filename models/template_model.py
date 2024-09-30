@@ -5,13 +5,39 @@ from torch.nn import Conv1d
 from torch.nn import Linear
 from torch.nn import Parameter
 
-from utils import MEME
+from utils import MEME, return_coef_for_normalization
+from scipy.optimize import fmin
 
 from torch.nn.functional import pad
 
+def mse(x, y):
+    return np.mean(np.power(x-y, 2))
+
+def logistic(w, x):
+    return 1/(1+np.exp(-w[0] * x - w[1]))
+
+def set_objective(x, y):
+    def objective(w):
+        return mse(logistic(w, x), y)
+    return objective
+
+def return_conv_params(conv_weight):
+    conv_params = []
+    for i in range(conv_weight.shape[0]):
+        pwm = conv_weight[i].detach().cpu().numpy()
+        if np.all(pwm.sum(axis=0) == 0):
+            w = np.array([0,0])
+        else:
+            s, d = return_coef_for_normalization(pwm.T)
+            f = set_objective(s, np.power(np.cumsum(d), 10))
+            w = fmin(func=f, x0=np.array([1.0, 5.0]))
+        conv_params.append(w)
+    return conv_params
+
 class TemplateModel(Module):
-    def __init__(self, num_of_response, motif_path, window_size, 
-                 stride, pad_motif, reg_dim_expansion=1):
+    def __init__(self, num_of_response, motif_path, window_size,
+                 stride, pad_motif, reg_dim_expansion=1, both_direction = True,
+                 initiate_conv_w_cdf = False):
         super(TemplateModel, self).__init__()
 
         #keep y dimension
@@ -21,7 +47,9 @@ class TemplateModel(Module):
         self.meme_file = MEME()
         self.motif_path = motif_path
         self.stride = stride
-        kernels = self.meme_file.parse(motif_path, "none")
+        kernels = self.meme_file.parse(motif_path)
+        if not both_direction:
+          kernels = kernels[::2]
         kernels = pad(kernels, (0,0,0,0,0,pad_motif), value=0)
         self.pad_motif = pad_motif
 
@@ -36,9 +64,16 @@ class TemplateModel(Module):
 
         self.conv_bias = Parameter(torch.empty(1, self.out_channels, 1, requires_grad = True))
         self.conv_scale  = Parameter(torch.empty(self.out_channels, requires_grad = True))
-        with torch.no_grad():
-            torch.nn.init.ones_(self.conv_scale)
-            torch.nn.init.zeros_(self.conv_bias)
+        if initiate_conv_w_cdf:
+            params = return_conv_params(self.conv_motif.weight)
+            with torch.no_grad():
+                for i, p in enumerate(params):
+                    self.conv_bias[:,i,:] = p[1]
+                    self.conv_scale[i] = p[0]
+        else:
+            with torch.no_grad():
+                torch.nn.init.ones_(self.conv_scale)
+                torch.nn.init.zeros_(self.conv_bias)
 
         self.linreg = Linear(in_features=int(reg_dim_expansion*self.out_channels/2), out_features=num_of_response)
 

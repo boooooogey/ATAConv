@@ -5,6 +5,36 @@ import numpy as np
 #from Bio import SeqIO
 #from pyfaidx import Fasta
 
+def init_dist(dmin, dmax, dp, weights, probs):
+    out = np.zeros(int(np.round((dmax-dmin)/dp)+1))
+    ii = np.array(np.round((weights-dmin)/dp), dtype=int)
+    for i in range(len(probs)):
+        out[ii[i]] = out[ii[i]] + probs[i]
+    return out
+
+def score_dist(pwm, nucleotide_prob=None, gran=None, size=1000):
+    if nucleotide_prob is None:
+        nucleotide_prob = np.ones(4)/4
+    if gran is None:
+        if size is None:
+            raise ValueError("provide either gran or size. Both missing.")
+        gran = (np.max(pwm) - np.min(pwm))/(size - 1)
+    pwm = np.round(pwm/gran)*gran
+    pwm_max, pwm_min = pwm.max(axis=1), pwm.min(axis=1)
+    distribution = init_dist(pwm_min[0], pwm_max[0], gran, pwm[0], nucleotide_prob[0])
+    for i in range(1, pwm.shape[0]):
+        kernel = init_dist(pwm_min[i], pwm_max[i], gran, pwm[i], nucleotide_prob[i])
+        distribution = np.convolve(distribution, kernel)
+    support_min = pwm_min.sum()
+    ii = np.where(distribution > 0)[0]
+    support = support_min + (ii) * gran
+    return support, distribution[ii]
+
+def return_coef_for_normalization(pwm, nucleotide_prob=None, gran=None, size=1000):
+    pwm = pwm[pwm.sum(axis=1) != 0, :]
+    prob = np.exp(pwm) / np.exp(pwm).sum(axis=1).reshape(-1,1)
+    return score_dist(pwm, prob, gran, size)
+
 def readbed(filename):
     data = pd.read_csv(filename, sep = "\t", header = None)
     return data.iloc[:,0].to_numpy(), np.asarray(np.ceil(data.iloc[:,[1,2]].sum(axis=1)/2), dtype = int)
@@ -23,7 +53,7 @@ def returnonehot(string):
     return out
 
 class MEME():
-    def __init__(self):
+    def __init__(self, do_log = False):
         self.version = 0
         self.alphabet = ""
         self.strands = ""
@@ -31,8 +61,10 @@ class MEME():
         self.background = []
         self.names = []
         self.nmotifs = 0
+        self.do_log = do_log
+        self.epsilon = 1e-9
 
-    def parse(self, text, transform):
+    def parse(self, text):
         with open(text,'r') as file:
             data = file.read()
         data = data.split("\n\n")
@@ -59,17 +91,12 @@ class MEME():
             self.names.append(tmp[0].split()[-1])
             self.headers.append('\n'.join(tmp[:2]))
             kernel = np.array([j.split() for j in tmp[2:]],dtype=float).T
-            if (transform == "constant"):
-                bg=np.repeat(0.25,width).reshape(1,width)
-            if (transform == "local"):
-                bg=np.average(kernel,0).reshape(1,width)
-            if (transform != "none"):
-                offset=np.min(kernel[kernel>0])
-                kernel=np.log((kernel+offset)/bg)
             kernel_start = int((height - kernel.shape[1])/2)
             kernel_end = kernel_start + kernel.shape[1]
             out[2*k  , :, kernel_start:kernel_end] = kernel
             out[2*k+1, :, kernel_start:kernel_end] = kernel[::-1, ::-1]
+        if self.do_log:
+            out = np.log(out + self.epsilon)
         return torch.from_numpy(out)
 
     def motif_names(self):

@@ -1,6 +1,9 @@
 # data
 local/
 
+# ignore conda environment
+.conda/
+
 #bed files
 *.bed
 

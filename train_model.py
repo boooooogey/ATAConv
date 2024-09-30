@@ -212,12 +212,24 @@ train_dataset = torch.utils.data.Subset(dataset, train_indices)
 test_dataset = torch.utils.data.Subset(dataset, test_indices)
 validation_dataset = torch.utils.data.Subset(dataset, validation_indices)
 
-params['train_dataloader'] = torch.utils.data.DataLoader(train_dataset, batch_size = batch_size, shuffle = True, pin_memory = True, num_workers = num_of_workers)
+params['train_dataloader'] = torch.utils.data.DataLoader(train_dataset,
+                                                         batch_size = batch_size,
+                                                         shuffle = True, pin_memory = True,
+                                                         num_workers = num_of_workers,
+                                                         drop_last = True)
 number_of_step = len(train_dataset)
 
-params['test_dataloader'] = torch.utils.data.DataLoader(test_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
+params['test_dataloader'] = torch.utils.data.DataLoader(test_dataset,
+                                                        batch_size = batch_size,
+                                                        shuffle = False,
+                                                        num_workers = num_of_workers,
+                                                        drop_last = True)
 
-params['validation_dataloader'] = torch.utils.data.DataLoader(validation_dataset, batch_size = batch_size, shuffle = False, num_workers = num_of_workers)
+params['validation_dataloader'] = torch.utils.data.DataLoader(validation_dataset,
+                                                              batch_size = batch_size,
+                                                              shuffle = False,
+                                                              num_workers = num_of_workers,
+                                                              drop_last = True)
 
 params['loss'] = torch.nn.MSELoss(reduction="mean")
 
@@ -278,7 +290,7 @@ if len(penalty_param) != 1 or penalty_param_range is not None:
       optimizer = return_optimizer(model, penalty_param, penalty_type, learning_rate, penalize_layers)
     else:
       optimizer = return_optimizer(model, penalty_param, penalty_type, step_learning_rate, penalize_layers)
-    params['scheduler'] = ReduceLROnPlateau(optimizer)
+    params['scheduler'] = ReduceLROnPlateau(optimizer, patience=20)
     params['optimizer'] = optimizer
    
     if continue_i > i:
